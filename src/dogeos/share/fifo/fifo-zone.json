@@ -1,0 +1,19 @@
+{
+  "autoboot": true,
+  "brand": "joyent",
+  "image_uuid": "17c98640-1fdb-11e3-bf51-3708ce78e75a",
+  "max_physical_memory": {{=it.max_physical_memory || 3072}},
+  "cpu_cap": 100,
+  "alias": "fifo",
+  "quota": "{{=it.quota || 40}}",
+  "resolvers": [ {{~it.resolvers :value:index}} {{? index !==0 }},{{?}} "{{=value}}" {{~}} ],
+  "nics": [
+    {
+      "interface": "net0",
+      "nic_tag": "{{=it.net0nictag || 'external'}}",
+      "ip": "{{=it.net0ip || 'dhcp'}}"
+      {{? it.net0gateway}},"gateway": "{{=it.net0gateway}}"{{?}}
+      {{? it.net0netmask}},"netmask": "{{=it.net0netmask}}"{{?}}
+    }
+  ]
+}

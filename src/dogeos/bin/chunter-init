@@ -1,0 +1,37 @@
+# vim: set syn=sh:
+
+. ./common.sh
+DOGEOSBIN=`pwd`
+
+set -e
+
+
+function install {
+  # install chunter to /opt
+  echo2console "No chunter installed, now install it ..."
+  tmpd=/tmp/chunter-`date +%s`
+  rm -rf $tmpd
+  mkdir $tmpd
+  cd $tmpd
+  cp $DOGEOSBIN/../share/fifo/chunter-0.4.3.gz .
+  gunzip chunter-0.4.3.gz
+  sh ./chunter-0.4.3
+  echo2console "Done with code " $?
+}
+
+function startSvc {
+  echo2console "Start chunter service ..."
+  svcadm enable epmd
+  svcadm enable chunter
+  echo2console "OK."
+}
+
+# main
+echo2console "checking chunter installation now..."
+if [ -f /opt/chunter/bin/chunter ]; then
+  echo2console "OK."
+  startSvc
+else
+  install
+  startSvc
+fi
