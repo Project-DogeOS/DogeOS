@@ -5,7 +5,6 @@ DOGEOSBIN=`pwd`
 
 set -e
 
-
 function install {
   # install chunter to /opt
   echo2console "No chunter installed, now install it ..."

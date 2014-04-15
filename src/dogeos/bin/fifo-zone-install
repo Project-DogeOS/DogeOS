@@ -8,6 +8,10 @@ export PATH
 
 . ./common.sh
 
+DOGEOS_HOME=/dogeos
+DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
+NODE=/usr/node/bin/node
+
 # Defaults
 mail_to="root@localhost"
 ntp_hosts="pool.ntp.org"
@@ -34,6 +38,29 @@ failAndExit()
   exit 1
 }
 
+fifoPrepareResources()
+{
+  echo "Start preparing resources in $DOGEOS_EXTRA ... "
+  mkdir -p $DOGEOS_EXTRA
+  mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
+  $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
+  echo $! >$DOGEOS_HOME/var/repo-fifo.pid
+  $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/joyent 8081 &
+  echo $! >$DOGEOS_HOME/var/repo-joyent.pid
+  echo "Done"
+}
+
+fifoCloseResources()
+{
+  if [ -f $DOGEOS_HOME/var/repo-fifo.pid ]; then
+    kill `cat $DOGEOS_HOME/var/repo-fifo.pid`
+  fi
+  if [ -f $DOGEOS_HOME/var/repo-joyent.pid ]; then
+    kill `cat $DOGEOS_HOME/var/repo-joyent.pid`
+  fi
+  umount $DOGEOS_EXTRA
+}
+
 fifoCheckNetworkReachability()
 {
   ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!" 
@@ -45,48 +72,84 @@ fifoCheckNetworkReachability()
 
 fifoImportImg()
 {
-  imgadm update
-  imgadm import 17c98640-1fdb-11e3-bf51-3708ce78e75a
+  echo "Start import datasets ..."
+  #imgadm update
+  #imgadm import 17c98640-1fdb-11e3-bf51-3708ce78e75a
+  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
+  echo "Done"
 }
 
 fifoCreateVm()
 {
   vmconf=$1
-  echo "create VM (This could take a while)..."
+  echo "Create VM (This could take a while)..."
   result=`vmadm create -f $vmconf 2>&1`
   if ! grep -q "Successfully" <<<$result; then
     failAndExit "Oops, create fifo vm failed, that's something!"
   fi
   fifoZoneUUID=`echo $result | awk '{ print $NF; }'`
+  echo "Done"
 }
 
 fifoInstallComponents()
 {
-  echo "start install components for zone:" ${fifoZoneUUID}
-  zlogin $fifoZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  echo "Start install components for zone:" ${fifoZoneUUID} "..."
+  nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
+  #zlogin $fifoZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
+  zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
   zlogin $fifoZoneUUID pkgin -fy up
-  zlogin $fifoZoneUUID pkgin -y in nginx fifo-snarl fifo-sniffle fifo-howl fifo-wiggle fifo-jingles
-  zlogin $fifoZoneUUID cp "/opt/local/fifo-jingles/config/nginx.conf" "/opt/local/etc/nginx/nginx.conf"
+  zlogin $fifoZoneUUID "pkgin -y in nginx fifo-snarl"
+  zlogin $fifoZoneUUID "pkgin -y in fifo-sniffle"
+  zlogin $fifoZoneUUID "pkgin -y in fifo-howl"
+  zlogin $fifoZoneUUID "pkgin -y in fifo-wiggle"
+  zlogin $fifoZoneUUID "pkgin -y in fifo-jingles"
+  zlogin $fifoZoneUUID cp /opt/local/fifo-jingles/config/nginx.conf /opt/local/etc/nginx/nginx.conf
+  zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf.bak /opt/local/etc/pkgin/repositories.conf
+  echo "Done"
 }
 
 fifoEnableSvcs()
 {
-  echo "enable services of zone:" $fifoZoneUUID
-  zlogin $fifoZoneUUID svcadm enable epmd
-  zlogin $fifoZoneUUID svcadm enable snarl
-  zlogin $fifoZoneUUID svcadm enable sniffle
-  zlogin $fifoZoneUUID svcadm enable howl
-  zlogin $fifoZoneUUID svcadm enable wiggle
-  zlogin $fifoZoneUUID svcadm enable nginx
+  echo "Enable services of zone:" $fifoZoneUUID "..."
+
+  local svcs="epmd snarl sniffle howl wiggle nginx"
+  local done=0
+  for svc in $svcs
+  do
+    done=0
+    while : ; do
+      if [ "$done" -ne 0 ]; then
+        break
+      fi
+      echo "Try to enable svc $svc"
+      zlogin $fifoZoneUUID svcadm enable $svc
+      if [ $? -eq 0 ]; then
+        echo "OK"
+        done=1
+      else
+        echo "oops, will retry in 1 second..."
+      fi     
+      sleep 1 
+    done     
+  done       
+             
+  sleep 2    
+  echo "Verifying..."
   zlogin $fifoZoneUUID svcs epmd snarl sniffle howl wiggle nginx
+  echo "Done"
 }
 
 fifoPostConf()
 {
+  echo "Start to do post-configuration ..."
   adminPasswd=$1
   zlogin $fifoZoneUUID fifoadm users add admin
   zlogin $fifoZoneUUID fifoadm users grant admin ...
   zlogin $fifoZoneUUID fifoadm users passwd admin $adminPasswd 
+  echo "Done"
 }
 
 fifoGenData()
@@ -241,7 +304,7 @@ while read -r mac tag link; do
   tags[$nic_cnt]=$tag
   macs[$nic_cnt]=$mac
   links[$nic_cnt]=$link
-done < <(/usr/node/bin/node findnictag.js 2>/dev/null)
+done < <($NODE findnictag.js 2>/dev/null)
 
 #
 # Show welcome
@@ -337,6 +400,8 @@ done # end of main while
 
 # all info collected, now the guts
 
+printheader "Provision FIFO zone & configuration"
+
 # generate zone configure data
 tmpfifodata=/tmp/fifojson-`date +%s`.data
 rm -rf $tmpfifodata
@@ -347,18 +412,20 @@ fifoGenData $tmpfifodata
 tmpfifojson=/tmp/fifojson-`date +%s`.json
 rm -rf $tmpfifojson
 touch $tmpfifojson
-cat $tmpfifodata | /usr/node/bin/node doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
+cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
 echo "The json configuration for FIFO zone:" 
 cat $tmpfifojson | json
 promptval "input 'y' to continue..."
 [ "$val" == "y" ] || failAndExit "Cancelled. Bye."
 
-fifoCheckNetworkReachability
+fifoPrepareResources
+#fifoCheckNetworkReachability
 fifoImportImg
 fifoCreateVm $tmpfifojson
 fifoInstallComponents
 fifoEnableSvcs
 fifoPostConf $root_shadow
+fifoCloseResources
 
 echo "All done. DogeOS headnode is alive now!"
 
