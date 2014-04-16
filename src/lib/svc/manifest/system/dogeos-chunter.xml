@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+<service_bundle type="manifest" name="dogeos-chunter">
+  <service name="system/dogeos/chunter" type="service" version="1.0.0">
+
+    <create_default_instance enabled="true"/>
+    <single_instance/>
+
+    <dependency name='milestone-single-user' grouping='require_all' restart_on='none' type='milestone'>
+      <service_fmri value='svc:/milestone/single-user'/>
+    </dependency>
+
+    <exec_method
+      type="method"
+      name="start"
+      exec="/dogeos/bin/chunter-init"
+      timeout_seconds="1800">
+      <method_context>
+        <method_credential user="root" group="staff"/>
+      </method_context>
+    </exec_method>
+
+    <exec_method type="method" name="stop" exec=":true" timeout_seconds="0">
+      <method_context>
+        <method_credential user="root" group="staff"/>
+      </method_context>
+    </exec_method>
+
+    <stability value="Evolving"/>
+
+    <template>
+      <common_name>
+        <loctext xml:lang="C">DogeOS chunter service</loctext>
+      </common_name>
+    </template>
+
+  </service>
+</service_bundle>

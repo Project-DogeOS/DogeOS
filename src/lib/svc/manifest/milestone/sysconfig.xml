@@ -45,11 +45,19 @@
 	<single_instance />
 
         <dependency
-                name='milestone-dogeos'
+                name='milestone'
                 grouping='require_all'
                 restart_on='none'
                 type='service'>
-                <service_fmri value='svc:/milestone/dogeos' />
+                <service_fmri value='svc:/milestone/single-user' />
+        </dependency>
+
+        <dependency
+                name='dogeos-chunter'
+                grouping='require_all'
+                restart_on='none'
+                type='service'>
+                <service_fmri value='svc:/system/dogeos/chunter' />
         </dependency>
 
 	<exec_method
