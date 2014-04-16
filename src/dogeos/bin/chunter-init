@@ -1,5 +1,7 @@
 # vim: set syn=sh:
 
+cd /dogeos/bin
+
 . ./common.sh
 DOGEOSBIN=`pwd`
 
