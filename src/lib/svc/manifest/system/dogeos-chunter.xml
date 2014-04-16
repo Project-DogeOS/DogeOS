@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
-<service_bundle type="manifest" name="dogeos-chunter">
-  <service name="system/dogeos/chunter" type="service" version="1.0.0">
+<service_bundle type="manifest" name="dogeos">
+  <service name="system/dogeos" type="service" version="1.0.0">
 
     <create_default_instance enabled="true"/>
     <single_instance/>
 
-    <dependency name='milestone-single-user' grouping='require_all' restart_on='none' type='milestone'>
+    <dependency name='milestone-single-user' grouping='require_all' restart_on='none' type='service'>
       <service_fmri value='svc:/milestone/single-user'/>
     </dependency>
 
@@ -16,21 +16,32 @@
       exec="/dogeos/bin/chunter-init"
       timeout_seconds="1800">
       <method_context>
-        <method_credential user="root" group="staff"/>
+        <method_credential user="root" group="root"/>
       </method_context>
     </exec_method>
 
     <exec_method type="method" name="stop" exec=":true" timeout_seconds="0">
       <method_context>
-        <method_credential user="root" group="staff"/>
+        <method_credential user="root" group="root"/>
       </method_context>
     </exec_method>
+
+	<!--
+	    The init scripts should never automatically be run twice.
+	    duration=transient tells svc.startd not to restart if no
+	    processes are left running, and timeout_retry=false tells
+	    svc.startd not to retry the start method if it times out.
+	-->
+	<property_group name='startd' type='framework'>
+		<propval name='duration' type='astring' value='transient' />
+		<propval name='timeout_retry' type='boolean' value='false' />
+	</property_group>
 
     <stability value="Evolving"/>
 
     <template>
       <common_name>
-        <loctext xml:lang="C">DogeOS chunter service</loctext>
+        <loctext xml:lang="C">DogeOS service</loctext>
       </common_name>
     </template>
 
