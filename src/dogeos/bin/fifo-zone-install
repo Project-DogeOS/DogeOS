@@ -42,7 +42,8 @@ fifoPrepareResources()
 {
   echo "Start preparing resources in $DOGEOS_EXTRA ... "
   mkdir -p $DOGEOS_EXTRA
-  mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
+  #mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
+  mount -F hsfs /dev/dsk/c0t1d0p0 $DOGEOS_EXTRA
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
   echo $! >$DOGEOS_HOME/var/repo-fifo.pid
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/joyent 8081 &
@@ -77,6 +78,19 @@ fifoImportImg()
   #imgadm import 17c98640-1fdb-11e3-bf51-3708ce78e75a
   imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
   echo "Done"
+}
+
+fifoFixJoyentManifest()
+{
+  echo "Start check joyent manifest..."
+  local fixes="joyent joyent-minimal"
+  for fix in $fixes
+  do
+    echo "Fix manifest of brand $fix..."
+    cp ../share/joyent/manifest/sysconfig.xml /zones/manifests/$fix/milestone/
+    echo "Done"
+  done       
+  echo "All Done"
 }
 
 fifoCreateVm()
@@ -421,6 +435,7 @@ promptval "input 'y' to continue..."
 fifoPrepareResources
 #fifoCheckNetworkReachability
 fifoImportImg
+fifoFixJoyentManifest
 fifoCreateVm $tmpfifojson
 fifoInstallComponents
 fifoEnableSvcs

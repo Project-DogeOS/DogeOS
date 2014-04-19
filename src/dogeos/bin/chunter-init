@@ -3,6 +3,8 @@
 cd /dogeos/bin
 
 . ./common.sh
+. /lib/svc/share/smf_include.sh
+
 DOGEOSBIN=`pwd`
 
 set -e
@@ -36,3 +38,5 @@ else
   install
   startSvc
 fi
+
+exit $SMF_EXIT_OK
