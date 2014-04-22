@@ -6,6 +6,9 @@
 PATH=/usr/sbin:/usr/bin
 export PATH
 
+oldcwd=`pwd`
+cd /dogeos/bin
+
 . ./common.sh
 
 DOGEOS_HOME=/dogeos
@@ -444,3 +447,4 @@ fifoCloseResources
 
 echo "All done. DogeOS headnode is alive now!"
 
+cd $oldcwd

@@ -6,6 +6,9 @@
 PATH=/usr/sbin:/usr/bin
 export PATH
 
+oldcwd=`pwd`
+cd /dogeos/bin
+
 . ./common.sh
 
 DOGEOS_HOME=/dogeos
@@ -193,103 +196,6 @@ sigexit()
   exit 0
 }
 
-# Input must be a valid network number (see is_net())
-promptnet()
-{
-  val=""
-  def="$2"
-  while [ -z "$val" ]; do
-    if [ -n "$def" ]; then
-      printf "%s [%s]: " "$1" "$def"
-    else
-      printf "%s: " "$1"
-    fi
-    read val
-    [ -z "$val" ] && val="$def"
-    if [[ "$val" != "dhcp" ]]; then
-      is_net "$val" || val=""
-    fi
-    [ -n "$val" ] && break
-    echo "A valid network number (n.n.n.n) or 'dhcp' must be provided."
-  done
-}
-
-printnics()
-{
-  i=1
-  printf "%-6s %-9s %-18s %-7s\n" "Number" "Link" "MAC Address" "Tag"
-  while [ $i -le $nic_cnt ]; do
-    printf "%-6d %-9s %-18s %-7s\n" $i ${links[$i]} ${macs[$i]} ${tags[$i]}
-    ((i++))
-  done
-}
-
-# Must choose a valid NIC on this system
-promptnic()
-{
-  if [[ $nic_cnt -eq 1 ]]; then
-    val="${tags[1]}"
-    return
-  fi
-
-  printnics
-  num=0
-  while [ /usr/bin/true ]; do
-    printf "Enter the number of the NIC for the %s interface: " "$1"
-    read num
-    if ! [[ "$num" =~ ^[0-9]+$ ]] ; then
-      echo ""
-    elif [ $num -ge 1 -a $num -le $nic_cnt ]; then
-      selected_tag="${tags[$num]}"
-      break
-    fi
-    # echo "You must choose between 1 and $nic_cnt."
-    printnics
-  done
-
-  val=$selected_tag
-}
-
-promptpw()
-{
-  while [ /usr/bin/true ]; do
-    val=""
-    while [ -z "$val" ]; do
-      printf "%s: " "$1"
-      stty -echo
-      read val
-      stty echo
-      echo
-      if [ -n "$val" ]; then
-        if [ "$2" == "chklen" -a ${#val} -lt 6 ]; then
-          echo "The password must be at least" \
-              "6 characters long."
-          val=""
-        else
-          break
-        fi
-      else 
-        echo "A value must be provided."
-      fi
-    done
-
-    cval=""
-    while [ -z "$cval" ]; do
-      printf "%s: " "Confirm password"
-      stty -echo
-      read cval
-      stty echo
-      echo
-      [ -n "$cval" ] && break
-      echo "A value must be provided."
-    done
-
-    [ "$val" == "$cval" ] && break
-
-    echo "The entries do not match, please re-enter."
-  done
-}
-
 printheader() 
 {
   local newline=
@@ -363,17 +269,20 @@ dogeosChooseNicTag()
     if [ $i -eq 1 ]; then
       nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${links[$i]} ${macs[$i]} ${tags[$i]}`
     else
-      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) off" $i ${links[$i]} ${macs[$i]} ${tags[$i]}`
+      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${links[$i]} ${macs[$i]} ${tags[$i]}`
     fi
     ((i++))
   done
 
   local message="Select the NIC of global zone to be used for FIFO zone:" 
-
-  local selected=$(dialog --backtitle "$backtitle" --stdout --radiolist "$message" 10 60 $nic_cnt $nics)
-  ret=$?
-
-  dogeosTestCancelled $ret
+  local selected=
+  
+  while [ /usr/bin/true ]; do
+    selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 $nic_cnt $nics)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
 
   val=${tags[$selected]}
 }
@@ -404,14 +313,14 @@ dogeosSetNetIP()
   local what=$1
   local default=$2
   local message="$what:
-(IPv4 net mask n.n.n.n)
+(IPv4 n.n.n.n)
 "
   local input=
   val=""
   while [ -z "$val" ]; do
     val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "$message" 10 60 "$default")
     ret=$?
-    dogeosTestCancelled $ret
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     is_net "$val" || val=""
     [ -n "$val" ] && break
     dialog --backtitle "$backtitle" --msgbox "A valid network mask (n.n.n.n) must be provided." 10 60
@@ -423,9 +332,9 @@ dogeosSetMem()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Memory for FIFO VM (in Megabytes):" 10 60 "2048")
+    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "2048")
     ret=$?
-    dogeosTestCancelled $ret
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
     else
@@ -439,9 +348,9 @@ dogeosSetDiskQuota()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Disk Quota for FIFO VM (in Megabytes):" 10 60 "20")
+    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Disk Quota for FIFO zone (in GB):" 10 60 "20")
     ret=$?
-    dogeosTestCancelled $ret
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
     else
@@ -462,14 +371,49 @@ dogeosSetRootPasswd()
       dialog --backtitle "$backtitle" --msgbox "A non-empty password must be provided." 10 60
       continue
     fi
-    local val2=
-    val2=$(dialog --backtitle "$backtitle" --stdout --insecure --no-cancel --passwordbox "Confirm password for root of FIFO zone:" 10 60)
+    local cval=
+    cval=$(dialog --backtitle "$backtitle" --stdout --insecure --no-cancel --passwordbox "Confirm password for root of FIFO zone:" 10 60)
     ret=$?
-    dogeosTestCancelled $ret
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     [ "$val" == "$cval" ] && break
     val=""
     dialog --backtitle "$backtitle" --msgbox "Two passwords do not match, please re-enter." 10 60
   done
+}
+
+dogeosReview()
+{
+  local ret=
+  local message="Please verify that there inputs are correct:
+
+FIFO zone quota
+
+  Memory (in MB): $fifo_vm_mem
+  Disk (in GB): $fifo_vm_quota 
+
+FIFO zone NIC configuration
+
+  MAC address: $net0_nic
+  IP address: $net0_ip"
+
+if [[ $net0_ip != 'dhcp' ]]; then
+  message=${message}"
+  Netmask: $net0_netmask
+  Gateway: $net0_gateway
+  DNS: $dns_resolver1,$dns_resolver2
+  DNS search domain: $dns_domain
+  NTP server: $ntp_hosts
+  Domain name: $domainname
+"
+fi
+
+  dialog --backtitle "$backtitle" --yesno "$message" 30 60
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    val=""
+  else
+    val="retry"
+  fi
 }
 
 dogeosAskConfiguration()
@@ -484,7 +428,6 @@ dogeosAskConfiguration()
       net0_netmask="$val"
       dogeosSetNetIP "Set Gateway for the default NIC of FIFO zone" "$net0_gateway"
       net0_gateway="$val"
-      exit 0
     fi
     dogeosSetMem
     fifo_vm_mem="$val"
@@ -492,7 +435,10 @@ dogeosAskConfiguration()
     fifo_vm_quota="$val"
     dogeosSetRootPasswd
     root_shadow="$val"
-    exit 0
+    dogeosReview
+    if [ -z "$val" ]; then
+      break
+    fi
   done
 }
 
@@ -500,85 +446,14 @@ dogeosAskConfiguration()
 # Main loop to prompt for user input
 #
 backtitle="DogeOS: Welcome!"
-
 dogeosWelcome
 
 backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
 dogeosAskConfiguration
 
-while [ /usr/bin/true ]; do
-
-  # Networking
-  printheader "Networking" 
-  promptnic "FIFO default nic"
-  net0_nic="$val"
-  promptnet "IP address (or 'dhcp' )" "$net0_ip"
-  net0_ip="$val"
-  if [[ $net0_ip != 'dhcp' ]]; then
-    # netmask, gateway, resolvers, domainname, domain, etc
-    promptnet "netmask" "$admin_netmask"
-    net0_netmask="$val"
-    printheader "Networking - Continued"
-    message=""
-    printf "$message"
-    message="
-  The default gateway will determine which network will be used to connect to
-  other networks.\n\n"
-    printf "$message"
-    promptnet "Enter the default gateway IP" "$net0_gateway"
-    net0_gateway="$val"
-    #promptval "Enter the Primary DNS server IP" "$dns_resolver1"
-    #dns_resolver1="$val"
-    #promptval "Enter the Secondary DNS server IP" "$dns_resolver2"
-    #dns_resolver2="$val"
-    #promptval "Enter the domain name" "$domainname"
-    #domainname="$val"
-    #promptval "Default DNS search domain" "$dns_domain"
-    #dns_domain="$val"
-  fi  
-
-  # Mem, Disk Quota
-  printheader "FIFO VM Configuration"
-  message=""
-  printf "$message"
-  promptval "Memory for FIFO VM (in Megabytes)" "$fifo_vm_mem"
-  fifo_vm_mem="$val"
-  promptval "Disk Quota for FIFO VM (in Megabytes)" "$fifo_vm_quota" 
-  fifo_vm_quota="$val"
-
-  # Admin Account
-  printheader "Admin Account Information"
-  promptpw "Enter FIFO admin password" "nolen"
-  root_shadow="$val"
-  printheader "Verify Configuration"
-
-  # Final Review 
-  message=""
-  printf "$message"
-  echo "Verify that the following values are correct:"
-  echo
-  echo "Memory for FIFO VM (in Megabytes):" "$fifo_vm_mem"
-  echo "Disk Quota for FIFO VM (in Megabytes):" "$fifo_vm_quota" 
-  echo "MAC address: $net0_nic"
-  echo "IP address: $net0_ip"
-  if [[ $net0_ip != 'dhcp' ]]; then
-    echo "Netmask: $net0_netmask"
-    echo "Gateway router IP address: $net0_gateway"
-    echo "DNS servers: $dns_resolver1,$dns_resolver2"
-    echo "Default DNS search domain: $dns_domain"
-    echo "NTP server: $ntp_hosts"
-    echo "Domain name: $domainname"
-    echo
-  fi
-  promptval "Is this correct?" "y"
-  [ "$val" == "y" ] && break
-  clear
-
-done # end of main while 
-
 # all info collected, now the guts
 
-printheader "Provision FIFO zone & configuration"
+backtitle="DogeOS: Preparing to provision FIFO zone"
 
 # generate zone configure data
 tmpfifodata=/tmp/fifojson-`date +%s`.data
@@ -591,10 +466,14 @@ tmpfifojson=/tmp/fifojson-`date +%s`.json
 rm -rf $tmpfifojson
 touch $tmpfifojson
 cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
-echo "The json configuration for FIFO zone:" 
-cat $tmpfifojson | json
-promptval "input 'y' to continue..."
-[ "$val" == "y" ] || failAndExit "Cancelled. Bye."
+
+message="Continue with following json configuration of FIFO zone ?
+
+"$(cat $tmpfifojson | json)
+dialog --backtitle "$backtitle" --yesno "$message" 30 60
+if [ $? -ne 0 ]; then
+  exit $?  
+fi
 
 fifoPrepareResources
 #fifoCheckNetworkReachability
@@ -608,3 +487,4 @@ fifoCloseResources
 
 echo "All done. DogeOS headnode is alive now!"
 
+cd $oldcwd
