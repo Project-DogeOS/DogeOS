@@ -57,7 +57,7 @@
                 grouping='require_all'
                 restart_on='none'
                 type='service'>
-                <service_fmri value='svc:/system/dogeos/chunter' />
+                <service_fmri value='svc:/system/dogeos' />
         </dependency>
 
 	<exec_method

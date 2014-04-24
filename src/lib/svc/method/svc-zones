@@ -120,15 +120,18 @@ cp_brand_manifests()
 
   # DOGEOS
   # Somehow we have to fix the manifest file for zone here.
-  # In detail, we have to fix sysconfig.xml. We do not want the dogeos-chunter dependency
-  #   go to zone, which will eventually make the zone unable to reach milestone sysconfig.
-  # Currently the fix is simple and brute: just overwrite with the right ones in 
-  #   /dogeos/share/joyent/manifest. May be later we can change this hack-style solution.
+  # In detail, we have to fix sysconfig.xml. We do not want the 
+  #   dogeos-chunter dependency go to zone, which will eventually
+  #   make the zone unable to reach milestone sysconfig.
+  # Currently the fix is simple and brute: just overwrite with 
+  #   the right ones in /dogeos/share/joyent/manifest. May be later 
+  #   we can change this hack-style solution.
+  echo "Try to fix manifest of brand $brand ..."
   if [ -f /zones/manifests/$brand/milestone/sysconfig.xml ]; then
-    echo "Will fix manifest of brand $brand ..."
+    echo "Yes, will fix it ..."
     cp /dogeos/share/joyent/manifest/sysconfig.xml /zones/manifests/$brand/milestone/
-    echo "Done"
   fi
+  echo "Done"
 }
 
 #
