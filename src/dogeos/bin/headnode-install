@@ -7,7 +7,7 @@ PATH=/usr/sbin:/usr/bin
 export PATH
 
 oldcwd=`pwd`
-cd /dogeos/bin
+#cd /dogeos/bin
 
 . ./common.sh
 
@@ -17,6 +17,7 @@ NODE=/usr/node/bin/node
 
 # Defaults
 backtitle=
+live_media=
 mail_to="root@localhost"
 ntp_hosts="pool.ntp.org"
 dns_resolver1="8.8.8.8"
@@ -46,8 +47,11 @@ fifoPrepareResources()
 {
   echo "Start preparing resources in $DOGEOS_EXTRA ... "
   mkdir -p $DOGEOS_EXTRA
-  #mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
-  mount -F hsfs /dev/dsk/c0t1d0p0 $DOGEOS_EXTRA
+  if [ "$live_media" == "usb" ]; then
+    mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
+  else # dvd
+    mount -F hsfs /dev/dsk/c0t1d0p0 $DOGEOS_EXTRA
+  fi
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
   echo $! >$DOGEOS_HOME/var/repo-fifo.pid
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/joyent 8081 &
@@ -260,6 +264,29 @@ Would you like to continue to setup?"
   dogeosTestCancelled $? "noconfirm"
 }
 
+dogeosAskLiveMediaType()
+{
+  local ret=
+  local message="Your DogeOS live type is ?
+"
+  local types="1 LiveUSB on 2 LiveDVD-ROM off"
+  local selected=
+
+  echo $types
+  while [ /usr/bin/true ]; do
+    selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 2 $types)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
+
+  if [ "$selected" == "1" ]; then
+    val="usb"
+  else
+    val="dvd"
+  fi
+}
+
 dogeosChooseNicTag()
 {
   local ret=
@@ -447,6 +474,9 @@ dogeosAskConfiguration()
 #
 backtitle="DogeOS: Welcome!"
 dogeosWelcome
+
+dogeosAskLiveMediaType
+live_media="$val"
 
 backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
 dogeosAskConfiguration
