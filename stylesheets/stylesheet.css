@@ -401,6 +401,10 @@ header div.inner > div {
   box-shadow: inset 0px 0px 58px #fff;
 }
 
+#head-caption {
+  margin-left: 30px;
+}
+
 /* #Media Queries
 ================================================== */
 
@@ -513,5 +517,8 @@ header div.inner > div {
   #head-logo {
     left: 65%;
     top: 35px;
+  }
+  #head-caption {
+    margin-left: 0px;
   }
 }
