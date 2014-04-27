@@ -7,7 +7,7 @@ PATH=/usr/sbin:/usr/bin
 export PATH
 
 oldcwd=`pwd`
-#cd /dogeos/bin
+cd /dogeos/bin
 
 . ./common.sh
 
@@ -16,9 +16,15 @@ DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
 NODE=/usr/node/bin/node
 
 # Defaults
+val=
 backtitle=
 live_media=
-mail_to="root@localhost"
+live_media_path=
+declare -a states
+declare -a nics
+declare -a assigned
+fifo_zone_json=
+
 ntp_hosts="pool.ntp.org"
 dns_resolver1="8.8.8.8"
 dns_resolver2="8.8.4.4"
@@ -30,12 +36,7 @@ net0_ip=
 net0_gateway=
 net0_netmask=
 
-# Globals
-declare -a states
-declare -a nics
-declare -a assigned
-
-# functions
+# Functions
 
 failAndExit()
 {
@@ -43,14 +44,14 @@ failAndExit()
   exit 1
 }
 
-fifoPrepareResources()
+dogeosPrepareResources()
 {
   echo "Start preparing resources in $DOGEOS_EXTRA ... "
   mkdir -p $DOGEOS_EXTRA
   if [ "$live_media" == "usb" ]; then
-    mount -F pcfs /dev/dsk/c0t0d0p0:c $DOGEOS_EXTRA
+    mount -F pcfs $live_media_path:c $DOGEOS_EXTRA
   else # dvd
-    mount -F hsfs /dev/dsk/c0t1d0p0 $DOGEOS_EXTRA
+    mount -F hsfs $live_mddia_path $DOGEOS_EXTRA
   fi
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
   echo $! >$DOGEOS_HOME/var/repo-fifo.pid
@@ -59,7 +60,7 @@ fifoPrepareResources()
   echo "Done"
 }
 
-fifoCloseResources()
+dogeosCloseResources()
 {
   if [ -f $DOGEOS_HOME/var/repo-fifo.pid ]; then
     kill `cat $DOGEOS_HOME/var/repo-fifo.pid`
@@ -70,7 +71,7 @@ fifoCloseResources()
   umount $DOGEOS_EXTRA
 }
 
-fifoCheckNetworkReachability()
+dogeosCheckNetworkReachability()
 {
   ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!" 
   echo "datasets.joyent.com reached!"
@@ -79,7 +80,7 @@ fifoCheckNetworkReachability()
   echo "release.project-fifo.net reached!"
 }
 
-fifoImportImg()
+dogeosImportImg()
 {
   echo "Start import datasets ..."
   #imgadm update
@@ -88,7 +89,7 @@ fifoImportImg()
   echo "Done"
 }
 
-fifoFixJoyentManifest()
+dogeosFixJoyentManifest()
 {
   echo "Start check joyent manifest..."
   local fixes="joyent joyent-minimal"
@@ -101,7 +102,7 @@ fifoFixJoyentManifest()
   echo "All Done"
 }
 
-fifoCreateVm()
+dogeosCreateVm()
 {
   vmconf=$1
   echo "Create VM (This could take a while)..."
@@ -113,12 +114,11 @@ fifoCreateVm()
   echo "Done"
 }
 
-fifoInstallComponents()
+dogeosInstallComponents()
 {
   echo "Start install components for zone:" ${fifoZoneUUID} "..."
-  nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
-  nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
-  #zlogin $fifoZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
   zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
   zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
   zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
@@ -133,7 +133,7 @@ fifoInstallComponents()
   echo "Done"
 }
 
-fifoEnableSvcs()
+dogeosEnableSvcs()
 {
   echo "Enable services of zone:" $fifoZoneUUID "..."
 
@@ -164,7 +164,7 @@ fifoEnableSvcs()
   echo "Done"
 }
 
-fifoPostConf()
+dogeosPostConf()
 {
   echo "Start to do post-configuration ..."
   adminPasswd=$1
@@ -174,7 +174,7 @@ fifoPostConf()
   echo "Done"
 }
 
-fifoGenData()
+dogeosGenData()
 {
   datafile=$1
   echo "{" >>$1
@@ -199,37 +199,6 @@ sigexit()
   echo "You must reboot to re-run system configuration."
   exit 0
 }
-
-printheader() 
-{
-  local newline=
-  local cols=`tput cols`
-  local subheader=$1
-  
-  if [ $cols -gt 80 ] ;then
-    newline='\n'
-  fi
-  
-  clear
-  for i in {1..80} ; do printf "-" ; done && printf "$newline"
-  printf " %-40s\n" "DogeOS Setup"
-  printf " %-40s%38s\n" "$subheader" "http://dogeos.github.io/install"
-  for i in {1..80} ; do printf "-" ; done && printf "$newline"
-
-}
-
-trap sigexit SIGINT
-
-#
-# Get local NIC info
-#
-nic_cnt=0
-while read -r mac tag link; do
-  ((nic_cnt++))
-  tags[$nic_cnt]=$tag
-  macs[$nic_cnt]=$mac
-  links[$nic_cnt]=$link
-done < <($NODE findnictag.js 2>/dev/null)
 
 dogeosTestCancelled()
 {
@@ -267,12 +236,11 @@ Would you like to continue to setup?"
 dogeosAskLiveMediaType()
 {
   local ret=
-  local message="Your DogeOS live type is ?
+  local message="Your DogeOS Live type is ?
 "
   local types="1 LiveUSB on 2 LiveDVD-ROM off"
   local selected=
 
-  echo $types
   while [ /usr/bin/true ]; do
     selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 2 $types)
     ret=$?
@@ -285,6 +253,45 @@ dogeosAskLiveMediaType()
   else
     val="dvd"
   fi
+}
+
+dogeosDecideMediaDev()
+{
+  local live_media_type=$1
+
+  local dev_cnt=0
+  local devs=
+  declare -a dev_paths
+  declare -a dev_names 
+
+  while IFS=, read -r path name; do
+    ((dev_cnt++))
+    dev_paths[$dev_cnt]=$path
+    dev_names[$dev_cnt]=$name
+    if [ $dev_cnt -eq 1 ]; then
+      devs=${devs}"$dev_cnt \"$name\" on"
+    else
+      devs=${devs}"$dev_cnt \"$name\" off"
+    fi
+  done < <($NODE findrmdev.js $live_media_type 2>/dev/null)
+
+  local ret=
+  local selected=
+  val=
+  if [ $dev_cnt == 1 ]; then
+    val=${dev_paths[1]}
+    return
+  fi
+
+  local message="Multiple media devices found. Please select your device of DogeOS Live:"
+  while [ /usr/bin/true ]; do
+    selected=$(dialog --backtitle "$backtitle" --radiolist "$message" 10 60 $dev_cnt $devs)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
+
+  val=${dev_paths[$selected]}
 }
 
 dogeosChooseNicTag()
@@ -469,52 +476,77 @@ dogeosAskConfiguration()
   done
 }
 
-#
-# Main loop to prompt for user input
-#
-backtitle="DogeOS: Welcome!"
-dogeosWelcome
+dogeosGenZoneConf()
+{
+  # generate zone configure data
+  local tmpfifodata=/tmp/fifojson-`date +%s`.data
+  rm -rf $tmpfifodata
+  touch $tmpfifodata
+  fifoGenData $tmpfifodata
+  
+  # generate zone json
+  local tmpfifojson=/tmp/fifojson-`date +%s`.json
+  rm -rf $tmpfifojson
+  touch $tmpfifojson
+  cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
+  
+  local message="Continue with following json configuration of FIFO zone ?
+  
+  "$(cat $tmpfifojson | json)
+  dialog --backtitle "$backtitle" --yesno "$message" 30 60
+  if [ $? -ne 0 ]; then
+    exit $?  
+  fi
 
+  val="$tmpfifojson"
+}
+
+#
+# Main entry start here
+#
+
+# preparation
+trap sigexit SIGINT
+
+# Get local NIC info
+nic_cnt=0
+while read -r mac tag link; do
+  ((nic_cnt++))
+  tags[$nic_cnt]=$tag
+  macs[$nic_cnt]=$mac
+  links[$nic_cnt]=$link
+done < <($NODE findnictag.js 2>/dev/null)
+
+# now the guts
+backtitle="DogeOS: Welcome!"
+
+dogeosWelcome
 dogeosAskLiveMediaType
-live_media="$val"
+live_media=$val
+dogeosDecideMediaDev $live_media
+live_media_path="$val"
+echo $live_media_path
 
 backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
-dogeosAskConfiguration
 
-# all info collected, now the guts
+dogeosAskConfiguration
 
 backtitle="DogeOS: Preparing to provision FIFO zone"
 
-# generate zone configure data
-tmpfifodata=/tmp/fifojson-`date +%s`.data
-rm -rf $tmpfifodata
-touch $tmpfifodata
-fifoGenData $tmpfifodata
+dogeosGenZoneConf
+fifo_zone_json="$val"
 
-# generate zone json
-tmpfifojson=/tmp/fifojson-`date +%s`.json
-rm -rf $tmpfifojson
-touch $tmpfifojson
-cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
+dogeosPrepareResources
+dogeosImportImg
+dogeosFixJoyentManifest
+dogeosCreateVm $fifo_zone_json
+dogeosInstallComponents
+dogeosEnableSvcs
+dogeosPostConf $root_shadow
+dogeosCloseResources
 
-message="Continue with following json configuration of FIFO zone ?
+backtitle="DogeOS: Congratulation!"
 
-"$(cat $tmpfifojson | json)
-dialog --backtitle "$backtitle" --yesno "$message" 30 60
-if [ $? -ne 0 ]; then
-  exit $?  
-fi
-
-fifoPrepareResources
-#fifoCheckNetworkReachability
-fifoImportImg
-fifoFixJoyentManifest
-fifoCreateVm $tmpfifojson
-fifoInstallComponents
-fifoEnableSvcs
-fifoPostConf $root_shadow
-fifoCloseResources
-
-echo "All done. DogeOS headnode is alive now!"
+dialog --backtitle "$backtitle" --msgbox "All done. FiFo zone is setup and running alive now!" 10 60
 
 cd $oldcwd
