@@ -49,9 +49,9 @@ dogeosPrepareResources()
   echo "Start preparing resources in $DOGEOS_EXTRA ... "
   mkdir -p $DOGEOS_EXTRA
   if [ "$live_media" == "usb" ]; then
-    mount -F pcfs $live_media_path:c $DOGEOS_EXTRA
+    mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
   else # dvd
-    mount -F hsfs $live_mddia_path $DOGEOS_EXTRA
+    mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
   fi
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
   echo $! >$DOGEOS_HOME/var/repo-fifo.pid
@@ -275,6 +275,16 @@ dogeosDecideMediaDev()
     fi
   done < <($NODE findrmdev.js $live_media_type 2>/dev/null)
 
+  local message=
+  if [ $dev_cnt == 0 ]; then
+    message="Can not found the dev object of DogeOS Live. 
+
+You may have chosen wrong. Please restart this program.
+" 
+    dialog --backtitle "$backtitle" --msgbox "$message" 10 60
+    exit 1
+  fi
+
   local ret=
   local selected=
   val=
@@ -283,7 +293,7 @@ dogeosDecideMediaDev()
     return
   fi
 
-  local message="Multiple media devices found. Please select your device of DogeOS Live:"
+  message="Multiple media devices found. Please select your device of DogeOS Live:"
   while [ /usr/bin/true ]; do
     selected=$(dialog --backtitle "$backtitle" --radiolist "$message" 10 60 $dev_cnt $devs)
     ret=$?
@@ -482,7 +492,7 @@ dogeosGenZoneConf()
   local tmpfifodata=/tmp/fifojson-`date +%s`.data
   rm -rf $tmpfifodata
   touch $tmpfifodata
-  fifoGenData $tmpfifodata
+  dogeosGenData $tmpfifodata
   
   # generate zone json
   local tmpfifojson=/tmp/fifojson-`date +%s`.json
