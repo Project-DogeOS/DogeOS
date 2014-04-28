@@ -1,4 +1,4 @@
-# vim: set syn=sh:
+#!/bin/sh
 
 cd /dogeos/bin
 
@@ -7,36 +7,75 @@ cd /dogeos/bin
 
 DOGEOSBIN=`pwd`
 
-set -e
+NODE=/usr/node/bin/node
 
-function install {
+val=
+
+install() 
+{
   # install chunter to /opt
   echo2console "No chunter installed, now install it ..."
   tmpd=/tmp/chunter-`date +%s`
   rm -rf $tmpd
   mkdir $tmpd
   cd $tmpd
-  cp $DOGEOSBIN/../share/fifo/chunter-0.4.3.gz .
-  gunzip chunter-0.4.3.gz
-  sh ./chunter-0.4.3
+  cp $DOGEOSBIN/../share/fifo/chunter-latest.gz .
+  gunzip chunter-latest.gz
+  sh ./chunter-latest
   echo2console "Done with code " $?
 }
 
-function startSvc {
+startSvc() 
+{
   echo2console "Start chunter service ..."
   svcadm enable epmd
   svcadm enable chunter
   echo2console "OK."
 }
 
+versionUpdated() 
+{
+  # this only compare the chunter version in live with local installation
+  local live=$1
+  local local=$2
+  local v1=$(awk 'BEGIN { FS="," } { print $2 }' $live)
+  local v2=$(awk 'BEGIN { FS="," } { print $2 }' $local)
+  local v1d=$($NODE -e "console.log(Date.parse('${v1}'));")
+  local v2d=$($NODE -e "console.log(Date.parse('${v2}'));")
+  if [ $v1d -le $v2d ]; then
+    val="updated"
+  else
+    val=""
+  fi
+}
+
+tryOnlineUpdate() 
+{
+  echo2console "Try to reach release.project-fifo.net for online updates ..."
+  ping release.project-fifo.net 10
+  if [ $? -ne 0 ]; then
+    echo2console "Reach timeout"
+    return
+  fi 
+  echo2console "Reached, now update chunter ..."
+  /opt/chunter/bin/update
+}
+
 # main
-echo2console "checking chunter installation now..."
+echo2console "Checking chunter installation now..."
 if [ -f /opt/chunter/bin/chunter ]; then
-  echo2console "OK."
-  startSvc
+  echo2console "Found."
+  versionUpdated
+  if [ -z $val ]; then
+    # outdated, so move & install again
+    mv /opt/chunter /opt/chunter-old-`date +%s`
+    install
+  fi
 else
   install
-  startSvc
 fi
+
+startSvc
+tryOnlineUpdate
 
 exit $SMF_EXIT_OK
