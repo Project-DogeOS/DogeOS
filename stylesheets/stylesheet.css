@@ -494,7 +494,7 @@ header div.inner > div {
     min-height: 0;
   }
   aside#sidebar a.button {
-    display: none;
+    /* display: none; */
   }
   #main-content h1:before,
   #main-content h2:before,
