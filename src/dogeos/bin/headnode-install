@@ -399,9 +399,14 @@ dogeosSetMem()
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
+      continue
     else
-      break
+      if [ $val -le 2048 ]; then
+        dialog --backtitle "$backtitle" --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        continue
+      fi
     fi
+    break
   done
 }
 
@@ -415,7 +420,12 @@ dogeosSetDiskQuota()
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
+      continue
     else
+      if [ $val -le 20 ]; then
+        dialog --backtitle "$backtitle" --msgbox "Disk <20GB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        continue
+      fi
       break
     fi
   done
