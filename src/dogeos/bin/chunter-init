@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/bash
+
+set -o xtrace
 
 cd /dogeos/bin
 
@@ -36,10 +38,10 @@ startSvc()
 versionUpdated() 
 {
   # this only compare the chunter version in live with local installation
-  local live=$1
-  local local=$2
-  local v1=$(awk 'BEGIN { FS="," } { print $2 }' $live)
-  local v2=$(awk 'BEGIN { FS="," } { print $2 }' $local)
+  # $1 is live path of chunter.version
+  # $2 is local path of chunter.version
+  local v1="$(awk 'BEGIN { FS="," } { print $2 }' "$1")"
+  local v2="$(awk 'BEGIN { FS="," } { print $2 }' "$2")"
   local v1d=$($NODE -e "console.log(Date.parse('${v1}'));")
   local v2d=$($NODE -e "console.log(Date.parse('${v2}'));")
   if [ $v1d -le $v2d ]; then
@@ -65,9 +67,11 @@ tryOnlineUpdate()
 echo2console "Checking chunter installation now..."
 if [ -f /opt/chunter/bin/chunter ]; then
   echo2console "Found."
-  versionUpdated
+  echo2console "Compare local chunter version with live media."
+  versionUpdated "/dogeos/share/fifo/chunter.version" "/opt/chunter/etc/chunter.version"
   if [ -z $val ]; then
     # outdated, so move & install again
+    echo2console "Local is outdated, will update to live media version..."
     mv /opt/chunter /opt/chunter-old-`date +%s`
     install
   fi
