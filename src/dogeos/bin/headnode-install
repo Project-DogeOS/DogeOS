@@ -170,7 +170,25 @@ dogeosPostConf()
   adminPasswd=$1
   zlogin $fifoZoneUUID fifoadm users add admin
   zlogin $fifoZoneUUID fifoadm users grant admin ...
-  zlogin $fifoZoneUUID fifoadm users passwd admin $adminPasswd 
+  zlogin $fifoZoneUUID fifoadm users passwd admin $adminPasswd
+
+  local message="Create default user group with basic permissions?"
+  dialog --backtitle "$backtitle" --yesno "$message" 10 60
+  local ret=$?
+  if [ $? == 0 ]; then
+    echo "Create default user group..."
+    zlogin $fifoZoneUUID fifoadm groups add Users
+    echo "Assign basic permissions to default user group..."
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud cloud status
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud datasets list
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud ipranges list
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud packages list
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud vms list
+    zlogin $fifoZoneUUID fifoadm groups grant Users cloud vms create
+    zlogin $fifoZoneUUID fifoadm groups grant Users hypervisors _ create
+  else
+    echo "As you wish, skipped"
+  fi
   echo "Done"
 }
 
