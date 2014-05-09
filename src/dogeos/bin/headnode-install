@@ -177,15 +177,18 @@ dogeosPostConf()
   local ret=$?
   if [ $? == 0 ]; then
     echo "Create default user group..."
-    zlogin $fifoZoneUUID fifoadm groups add Users
+    local UsersUUID=$(zlogin $fifoZoneUUID fifoadm roles add Users)
     echo "Assign basic permissions to default user group..."
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud cloud status
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud datasets list
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud ipranges list
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud packages list
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud vms list
-    zlogin $fifoZoneUUID fifoadm groups grant Users cloud vms create
-    zlogin $fifoZoneUUID fifoadm groups grant Users hypervisors _ create
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud cloud status
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud datasets list
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud networks list
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud ipranges list
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud packages list
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud vms list
+    zlogin $fifoZoneUUID fifoadm roles grant Users cloud vms create
+    zlogin $fifoZoneUUID fifoadm roles grant Users hypervisors _ create
+    zlogin $fifoZoneUUID fifoadm roles grant Users datasets _ create
+    zlogin $fifoZoneUUID fifoadm roles grant Users roles $UserUUID get
   else
     echo "As you wish, skipped"
   fi
