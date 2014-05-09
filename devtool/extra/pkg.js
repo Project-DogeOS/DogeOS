@@ -143,6 +143,12 @@ function print(pkgName) {
   console.log(pkgIndex[pkgName]);
 }
 
+function printAll() {
+  allPkgs.forEach(function(pkg) {
+    console.log(pkg['FILE_NAME']);
+  });
+}
+
 loadPkgs(process.argv[2], function() {
   if (process.argv[3]) {
     switch(process.argv[3]) {
@@ -158,5 +164,7 @@ loadPkgs(process.argv[2], function() {
         print(process.argv[4]);
         break;
     }
+  } else {
+    printAll();
   }
 });
