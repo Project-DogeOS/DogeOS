@@ -1,5 +1,6 @@
 /*
    usage:
+     node pkg.js pkg_summary
      node pkg.js pkg_summary search <name>
      node pkg.js pkg_summary dep <pkg_name>
      node pkg.js pkg_summary dep_dev <pkg_name>

@@ -1,6 +1,8 @@
 # usage:
 #   init.sh <target_dir>
 
+set -e
+
 MYDIR=`pwd`
 cd $1
 
