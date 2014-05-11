@@ -13,7 +13,7 @@ NODE=/usr/node/bin/node
 
 val=
 
-install() 
+install()
 {
   # install chunter to /opt
   echo2console "No chunter installed, now install it ..."
@@ -27,7 +27,7 @@ install()
   echo2console "Done with code " $?
 }
 
-startSvc() 
+startSvc()
 {
   echo2console "Start chunter service ..."
   svcadm enable epmd
@@ -35,30 +35,29 @@ startSvc()
   echo2console "OK."
 }
 
-versionUpdated() 
+versionUpdated()
 {
   # this only compare the chunter version in live with local installation
   # $1 is live path of chunter.version
   # $2 is local path of chunter.version
-  local v1="$(awk 'BEGIN { FS="," } { print $2 }' "$1")"
-  local v2="$(awk 'BEGIN { FS="," } { print $2 }' "$2")"
-  local v1d=$($NODE -e "console.log(Date.parse('${v1}'));")
-  local v2d=$($NODE -e "console.log(Date.parse('${v2}'));")
-  if [ $v1d -le $v2d ]; then
-    val="updated"
-  else
+  local v1="$(awk 'BEGIN { FS="," } { print $1 }' "$1")"
+  local v2="$(awk 'BEGIN { FS="," } { print $1 }' "$2")"
+  local vercomp=$($NODE vercomp.js ${v1} ${v2})
+  if [ $vercomp -eq 1 ]; then
     val=""
+  else
+    val="updated"
   fi
 }
 
-tryOnlineUpdate() 
+tryOnlineUpdate()
 {
   echo2console "Try to reach release.project-fifo.net for online updates ..."
   ping release.project-fifo.net 10
   if [ $? -ne 0 ]; then
     echo2console "Reach timeout"
     return
-  fi 
+  fi
   echo2console "Reached, now update chunter ..."
   /opt/chunter/bin/update
 }
