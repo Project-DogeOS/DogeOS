@@ -2,8 +2,8 @@
    usage:
      node pkg.js pkg_summary
      node pkg.js pkg_summary search <name>
-     node pkg.js pkg_summary dep <pkg_name>
-     node pkg.js pkg_summary dep_dev <pkg_name>
+     node pkg.js pkg_summary dep <pkg_name>...
+     node pkg.js pkg_summary dep_dev <pkg_name>...
      node pkg.js pkg_summary print <pkg_name>
  */
 
@@ -159,7 +159,9 @@ loadPkgs(process.argv[2], function() {
       case 'dep_dev':
         devMode = true;
       case 'dep':
-        dep(process.argv[4]);
+        for (var i=4; i<process.argv.length; i++) {
+          dep(process.argv[i]);
+        }
         break;
       case 'print':
         print(process.argv[4]);
