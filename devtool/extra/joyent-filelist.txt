@@ -1,0 +1,12 @@
+erlang-16.1.2nb2.tgz
+gcc47-libs-4.7.3nb3.tgz
+libltdl-2.4.2.tgz
+ncurses-5.9nb2.tgz
+nginx-1.5.12nb3.tgz
+openssl-1.0.1g.tgz
+pcre-8.34.tgz
+perl-5.18.2nb1.tgz
+pkg_install-info-4.5nb3.tgz
+readline-6.3.tgz
+unixodbc-2.3.0nb2.tgz
+zlib-1.2.8nb1.tgz
