@@ -73,7 +73,7 @@ dogeosCloseResources()
 
 dogeosCheckNetworkReachability()
 {
-  ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!" 
+  ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!"
   echo "datasets.joyent.com reached!"
 
   ping release.project-fifo.net 10 || failAndExit "Reach release.project-fifo.net failed. Check your network!"
@@ -98,7 +98,7 @@ dogeosFixJoyentManifest()
     echo "Fix manifest of brand $fix..."
     cp ../share/joyent/manifest/sysconfig.xml /zones/manifests/$fix/milestone/
     echo "Done"
-  done       
+  done
   echo "All Done"
 }
 
@@ -153,12 +153,12 @@ dogeosEnableSvcs()
         done=1
       else
         echo "oops, will retry in 1 second..."
-      fi     
-      sleep 1 
-    done     
-  done       
-             
-  sleep 2    
+      fi
+      sleep 1
+    done
+  done
+
+  sleep 2
   echo "Verifying..."
   zlogin $fifoZoneUUID svcs epmd snarl sniffle howl wiggle nginx
   echo "Done"
@@ -204,7 +204,7 @@ dogeosGenData()
   echo "," "\"net0nictag\":" "\"$net0_nic\"" >>$1
   echo "," "\"net0ip\":" "\"$net0_ip\"" >>$1
   echo "," "\"resolvers\": [ \"8.8.8.8\", \"8.8.4.4\" ]" >>$1
-  if ! [ -z $net0_gateway ]; then 
+  if ! [ -z $net0_gateway ]; then
     echo "," "\"net0gateway\":" "\"$net0_gateway\"" >>$1
   fi
   if ! [ -z $net0_netmask ]; then
@@ -283,8 +283,9 @@ dogeosDecideMediaDev()
   local dev_cnt=0
   local devs=
   declare -a dev_paths
-  declare -a dev_names 
+  declare -a dev_names
 
+  echo "Now finding your dev mount point (this will take up to 1min)..."
   while IFS=, read -r path name; do
     ((dev_cnt++))
     dev_paths[$dev_cnt]=$path
@@ -298,10 +299,10 @@ dogeosDecideMediaDev()
 
   local message=
   if [ $dev_cnt == 0 ]; then
-    message="Can not found the dev object of DogeOS Live. 
+    message="Can not found the dev object of DogeOS Live.
 
 You may have chosen wrong. Please restart this program.
-" 
+"
     dialog --backtitle "$backtitle" --msgbox "$message" 10 60
     exit 1
   fi
@@ -339,9 +340,9 @@ dogeosChooseNicTag()
     ((i++))
   done
 
-  local message="Select the NIC of global zone to be used for FIFO zone:" 
+  local message="Select the NIC of global zone to be used for FIFO zone:"
   local selected=
-  
+
   while [ /usr/bin/true ]; do
     selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 $nic_cnt $nics)
     ret=$?
@@ -441,7 +442,7 @@ dogeosSetRootPasswd()
   while [ -z "$val" ]; do
     val=$(dialog --backtitle "$backtitle" --stdout --insecure --no-cancel --passwordbox "Enter password for root of FIFO zone:" 10 60)
     ret=$?
-    dogeosTestCancelled $ret 
+    dogeosTestCancelled $ret
     if [ -z "$val" ]; then
       dialog --backtitle "$backtitle" --msgbox "A non-empty password must be provided." 10 60
       continue
@@ -464,7 +465,7 @@ dogeosReview()
 FIFO zone quota
 
   Memory (in MB): $fifo_vm_mem
-  Disk (in GB): $fifo_vm_quota 
+  Disk (in GB): $fifo_vm_quota
 
 FIFO zone NIC configuration
 
@@ -524,19 +525,19 @@ dogeosGenZoneConf()
   rm -rf $tmpfifodata
   touch $tmpfifodata
   dogeosGenData $tmpfifodata
-  
+
   # generate zone json
   local tmpfifojson=/tmp/fifojson-`date +%s`.json
   rm -rf $tmpfifojson
   touch $tmpfifojson
   cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
-  
+
   local message="Continue with following json configuration of FIFO zone ?
-  
+
   "$(cat $tmpfifojson | json)
   dialog --backtitle "$backtitle" --yesno "$message" 30 60
   if [ $? -ne 0 ]; then
-    exit $?  
+    exit $?
   fi
 
   val="$tmpfifojson"
