@@ -405,8 +405,9 @@ dogeosSetMem()
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
-      if [ $val -le 2048 ]; then
+      if [ $val -lt 2047 ]; then
         dialog --backtitle "$backtitle" --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        val=""
         continue
       fi
     fi
@@ -426,8 +427,9 @@ dogeosSetDiskQuota()
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
-      if [ $val -le 20 ]; then
+      if [ $val -lt 19 ]; then
         dialog --backtitle "$backtitle" --msgbox "Disk <20GB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        val=""
         continue
       fi
       break
