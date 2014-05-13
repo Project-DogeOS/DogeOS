@@ -1,30 +1,29 @@
-DOGEOS_SRC=
-SMARTOS_ISO_SRC=
-TMPDIR=tmp
+# usage: ./first_assemble.sh <smartos-iso> <dogeos-dir> <chunter-dir>
+SMARTOS_ISO_SRC=$1
+DOGEOS_SRC=$2/src
+CHUNTER_DIR=$3
 
 # init the workplace first
 ./workplace_init.sh
 wdev=$(lofiadm -a boot_archive)
 mount $wdev workplace
 
-# prepare tmp dir
-rm -rf ${TMPDIR}
-mkdir ${TMPDIR}
-
 # copy & mount smartos iso
-scp ${SMARTOS_ISO_SRC} ${TMPDIR}/smartos-latest.iso
-sdev=$(lofiadm -a ${TMPDIR}/smartos-latest.iso)
-mkdir -p ${TMPDIR}/sliso
-mount $sdev ${TMPDIR}/sliso
+sdev=$(lofiadm -a ${SMARTOS_ISO_SRC})
+rm -rf isomnt; mkdir -p isomnt
+mount $sdev isomnt
 
 # copy all from smartos iso to workplace
-rsync -avz ${TMPDIR}/sliso/ workplace/
+rsync -avz isomnt/ workplace/
 
 # copy dogeos overlay
 scp -r ${DOGEOS_SRC}/* workplace/
 
+# copy chutner release
+scp -r ${CHUNTER_DIR}/* workplace/dogeos/share/fifo/
+
 # close lofi devs, rm tmp files
-umount ${TMPDIR}/sliso
+umount isomnt
 lofiadm -d $sdev
 
 # now first pack

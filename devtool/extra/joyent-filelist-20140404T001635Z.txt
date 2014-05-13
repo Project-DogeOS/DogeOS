@@ -10,3 +10,5 @@ http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/pkg_install-info-4.5
 http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/readline-6.3.tgz
 http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/unixodbc-2.3.0nb2.tgz
 http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/zlib-1.2.8nb1.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/pkg_summary.gz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q1/x86_64/All/pkg_summary.bz2
