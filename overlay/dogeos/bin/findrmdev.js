@@ -4,8 +4,8 @@ function printUsb() {
   devs.forEach(function(dev) {
     var re = /usb/i;
     devs.forEach(function(dev) {
-      if (re.test(dev['Device Type'])) {
-        console.log(dev['Logical Node'].trim(), ',', dev['Connected Device'].trim());
+      if (re.test(dev['Device Type']) || re.test(dev['Bus'])) {
+        console.log(dev['Logical Node'].trim() + ',' + dev['Connected Device'].trim());
       }
     });
   });
@@ -14,11 +14,11 @@ function printUsb() {
 function printDvd() {
   var re = /dvd/i;
   devs.forEach(function(dev) {
-    if (re.test(dev['Device Type'])) {
-      console.log(dev['Logical Node'].trim(), ',', dev['Connected Device'].trim());
+    if (re.test(dev['Device Type']) || re.test(dev['Bus'])) {
+      console.log(dev['Logical Node'].trim() + ',' + dev['Connected Device'].trim());
     }
   });
-} 
+}
 
 (function runCmd(cmd, args, callback) {
    var spawn = require('child_process').spawn;
@@ -35,10 +35,10 @@ function printDvd() {
   }
   var re = /(\d+\.)?([^:\d]+):(.+)/;
   stdout.split('\n').forEach(function(line) {
-    var r = re.exec(line); 
+    var r = re.exec(line);
     if (r) {
       if (r[1]) { // have #, so it is record-start
-        devs.push({}); 
+        devs.push({});
       }
       var t = devs[devs.length - 1];
       t[r[2].trim()] = r[3].trim();

@@ -13,11 +13,11 @@ mkfile -n $USBSIZE $USBIMG
 udev=$(lofiadm -a $USBIMG)
 
 # create partition
-echo "Will start fdisk, please input cmd: "
+echo "Will start fdisk, please cmds ('n', '1', 'C', '100', 'y', '6') in order: "
 fdisk ${udev/lofi/rlofi}
 
 # format the usb img
-mkfs -F pcfs -o fat=32 ${udev/lofi/rlofi}
+mkfs -F pcfs -o fat=32 ${udev/lofi/rlofi}:c
 
 # now mount & copy the init files
 rm -rf u

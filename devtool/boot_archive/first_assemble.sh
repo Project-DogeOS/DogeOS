@@ -1,6 +1,6 @@
 # usage: ./first_assemble.sh <smartos-iso> <dogeos-dir> <chunter-dir>
 SMARTOS_ISO_SRC=$1
-DOGEOS_SRC=$2/src
+DOGEOS_OVERLAY=$2/overlay
 CHUNTER_DIR=$3
 
 # init the workplace first
@@ -17,7 +17,7 @@ mount $sdev isomnt
 rsync -avz isomnt/ workplace/
 
 # copy dogeos overlay
-scp -r ${DOGEOS_SRC}/* workplace/
+scp -r ${DOGEOS_OVERLAY}/* workplace/
 
 # copy chutner release
 scp -r ${CHUNTER_DIR}/* workplace/dogeos/share/fifo/
