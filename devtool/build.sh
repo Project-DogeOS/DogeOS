@@ -45,6 +45,10 @@ mkdir -p extra/dogeos
 # Fifo distro, in fifo dir
 rm -rf extra/vers/fifo; mkdir -p extra/vers/fifo-${FIFO_VER}
 cd extra/vers/fifo-${FIFO_VER}
+  wget http://release.project-fifo.net/pkg/rel/pkg_summary.gz
+  gunzip pkg_summary.gz
+  gzip -c pkg_summary >pkg_summary.gz
+  bzip2 pkg_summary
   wget -i ../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
 cd -
 ln -s ../vers/fifo-${FIFO_VER} extra/dogeos/fifo
