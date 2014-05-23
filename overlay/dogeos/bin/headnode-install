@@ -226,6 +226,19 @@ dogeosPostConf()
   echo "Done"
 }
 
+dogeosJoinCluster()
+{
+  if [ "$join_cluster" != "skip" ]; then
+    echo "As you wish, start to join cluster:" $join_cluster
+
+    for svc in "snarl sniffle howl"
+    do
+      zlogin $fifoZoneUUID /opt/local/fifo-$svc/bin/$svc-admin join $svc@$join_cluster
+      echo "$svc join cluster: $svc@$join_cluster done with code:" $?
+    done
+  fi
+}
+
 dogeosGenData()
 {
   datafile=$1
@@ -400,7 +413,7 @@ dogeosSetIP()
       is_net "$val" || val=""
     fi
     [ -n "$val" ] && break
-    dialog --backtitle "$backtitle" --msgbox "A valid network number (n.n.n.n) or 'dhcp' must be provided." 10 60
+    dialog --backtitle "$backtitle" --msgbox "A valid IPv4 (n.n.n.n) or 'dhcp' must be provided." 10 60
   done
 }
 
@@ -525,6 +538,28 @@ fi
   fi
 }
 
+dogeosAskJoinCluster()
+{
+  local ret=
+  local message="Do you want to join this FiFo zone to a cluster ?
+(If yes enter the IP otherwise leave this empty)
+"
+  local input=
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "$message" 10 60 "")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    if [[ "$val" != "" ]]; then
+      is_net "$val" || val=""
+    else
+      val="skip"
+    fi
+    [ -n "$val" ] && break
+    dialog --backtitle "$backtitle" --msgbox "A valid IPv4 (n.n.n.n) must be provided." 10 60
+  done
+}
+
 dogeosAskConfiguration()
 {
   while [ /usr/bin/true ]; do
@@ -544,6 +579,8 @@ dogeosAskConfiguration()
     fifo_vm_quota="$val"
     dogeosSetRootPasswd
     root_shadow="$val"
+    dogeosAskJoinCluster
+    join_cluster="$val"
     dogeosReview
     if [ -z "$val" ]; then
       break
@@ -619,6 +656,7 @@ dogeosInstallComponents
 dogeosEnableSvcs
 dogeosPostConf $root_shadow
 dogeosCloseResources
+dogeosJoinCluster
 
 backtitle="DogeOS: Congratulation!"
 
