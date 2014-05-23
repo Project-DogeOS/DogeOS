@@ -1,5 +1,4 @@
 http://release.project-fifo.net/pkg/rel/fifo-howl-0.1.13.tgz
-http://release.project-fifo.net/pkg/rel/fifo-jingles-0.3.0p4.tgz
 http://release.project-fifo.net/pkg/rel/fifo-jingles-0.3.2p2.tgz
 http://release.project-fifo.net/pkg/rel/fifo-snarl-0.4.5.tgz
 http://release.project-fifo.net/pkg/rel/fifo-sniffle-0.4.5.tgz
