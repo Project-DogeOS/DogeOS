@@ -171,7 +171,8 @@ dogeosEnableSvcs()
   done
 
   # now check fifo services in its way
-  for svc in "snarl sniffle howl wiggle"
+  local fifosvcs="snarl sniffle howl wiggle"
+  for svc in $fifosvcs
   do
     done=0
     while : ; do
@@ -228,10 +229,11 @@ dogeosPostConf()
 
 dogeosJoinCluster()
 {
+  local fifosvcs="snarl sniffle howl"
   if [ "$join_cluster" != "skip" ]; then
     echo "As you wish, start to join cluster:" $join_cluster
 
-    for svc in "snarl sniffle howl"
+    for svc in $fifosvcs
     do
       zlogin $fifoZoneUUID /opt/local/fifo-$svc/bin/$svc-admin join $svc@$join_cluster
       echo "$svc join cluster: $svc@$join_cluster done with code:" $?
@@ -518,8 +520,8 @@ FIFO zone NIC configuration
   MAC address: $net0_nic
   IP address: $net0_ip"
 
-if [[ $net0_ip != 'dhcp' ]]; then
-  message=${message}"
+  if [[ $net0_ip != 'dhcp' ]]; then
+    message=${message}"
   Netmask: $net0_netmask
   Gateway: $net0_gateway
   DNS: $dns_resolver1,$dns_resolver2
@@ -527,7 +529,14 @@ if [[ $net0_ip != 'dhcp' ]]; then
   NTP server: $ntp_hosts
   Domain name: $domainname
 "
-fi
+  fi
+
+  if [ -z $join_cluster ]; then
+    message=${message}"
+
+Will join cluster @: $join_cluster
+"
+  fi
 
   dialog --backtitle "$backtitle" --yesno "$message" 30 60
   ret=$?
