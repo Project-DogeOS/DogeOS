@@ -139,6 +139,8 @@ dogeosEnableSvcs()
 
   local svcs="epmd snarl sniffle howl wiggle nginx"
   local done=0
+  local ret=
+
   for svc in $svcs
   do
     done=0
@@ -146,10 +148,40 @@ dogeosEnableSvcs()
       if [ "$done" -ne 0 ]; then
         break
       fi
-      echo "Try to enable svc $svc"
+
+      echo "Try to enable svc $svc ..."
       zlogin $fifoZoneUUID svcadm enable $svc
       if [ $? -eq 0 ]; then
         echo "OK"
+      else
+        echo "oops, will retry in 1 second..."
+      fi
+
+      echo "Now verifying svc $svc ..."
+      ret=$(zlogin $fifoZoneUUID svcs $svc | grep "online" | grep $svc)
+      if [ -z $ret ]; then
+        echo "oops, will retry in 1 second..."
+      else
+        echo "Verified."
+        done=1
+      fi
+
+      sleep 1
+    done
+  done
+
+  # now check fifo services in its way
+  for svc in "snarl sniffle howl wiggle"
+  do
+    done=0
+    while : ; do
+      if [ "$done" -ne 0 ]; then
+        break
+      fi
+
+      echo "Validate fifo service $svc ..."
+      zlogin $fifoZoneUUID /opt/local/fifo-$svc/bin/$svc ping
+      if [ $? -eq 0 ]; then
         done=1
       else
         echo "oops, will retry in 1 second..."
@@ -158,8 +190,7 @@ dogeosEnableSvcs()
     done
   done
 
-  sleep 2
-  echo "Verifying..."
+  echo "Services enabled: "
   zlogin $fifoZoneUUID svcs epmd snarl sniffle howl wiggle nginx
   echo "Done"
 }
