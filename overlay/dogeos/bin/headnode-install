@@ -119,6 +119,7 @@ dogeosInstallComponents()
   echo "Start install components for zone:" ${fifoZoneUUID} "..."
   local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
   local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
+  zlogin $fifoZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
   zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
   zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
   zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
@@ -159,7 +160,7 @@ dogeosEnableSvcs()
 
       echo "Now verifying svc $svc ..."
       ret=$(zlogin $fifoZoneUUID svcs $svc | grep "online" | grep $svc)
-      if [ -z $ret ]; then
+      if [ -z "$ret" ]; then
         echo "oops, will retry in 1 second..."
       else
         echo "Verified."
