@@ -3,11 +3,9 @@ var devs = [];
 function printUsb() {
   devs.forEach(function(dev) {
     var re = /usb/i;
-    devs.forEach(function(dev) {
-      if (re.test(dev['Device Type']) || re.test(dev['Bus'])) {
-        console.log(dev['Logical Node'].trim() + ',' + dev['Connected Device'].trim());
-      }
-    });
+    if (re.test(dev['Device Type']) || re.test(dev['Bus'])) {
+      console.log(dev['Logical Node'].trim() + ',' + dev['Connected Device'].trim());
+    }
   });
 }
 
