@@ -445,14 +445,14 @@ dogeosSetMem()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "2048")
+    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "1024")
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
-      if [ $val -lt 2047 ]; then
+      if [ $val -lt 1023 ]; then
         dialog --backtitle "$backtitle" --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
         val=""
         continue
