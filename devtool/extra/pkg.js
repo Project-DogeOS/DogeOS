@@ -150,6 +150,17 @@ function printAll() {
   });
 }
 
+function latest() {
+  var l = {};
+  // use comment to differ the pkgs, and assume that pkgs input is in asc order
+  allPkgs.forEach(function(pkg) {
+    l[pkg['COMMENT']] = pkg['FILE_NAME'];
+  });
+  Object.keys(l).forEach(function(key) {
+    console.log(l[key]);
+  });
+}
+
 loadPkgs(process.argv[2], function() {
   if (process.argv[3]) {
     switch(process.argv[3]) {
@@ -165,6 +176,9 @@ loadPkgs(process.argv[2], function() {
         break;
       case 'print':
         print(process.argv[4]);
+        break;
+      case 'latest':
+        latest();
         break;
     }
   } else {
