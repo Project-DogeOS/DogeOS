@@ -340,7 +340,7 @@ dogeosDecideMediaDev()
     if [ $dev_cnt -eq 1 ]; then
       devs=${devs}"$dev_cnt \"$name\" on"
     else
-      devs=${devs}"$dev_cnt \"$name\" off"
+      devs=${devs}" $dev_cnt \"$name\" off"
     fi
   done < <($NODE findrmdev.js $live_media_type 2>/dev/null)
 
