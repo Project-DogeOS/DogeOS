@@ -52,7 +52,7 @@ versionUpdated()
 
 tryOnlineUpdate()
 {
-  echo2console "Try to reach release.project-fifo.net for online updates ..."
+  echo2console "Try to reach release.project-fifo.net for online updates (this will take max 10 seconds)..."
   ping release.project-fifo.net 10
   if [ $? -ne 0 ]; then
     echo2console "Reach timeout"
@@ -60,6 +60,7 @@ tryOnlineUpdate()
   fi
   echo2console "Reached, now update chunter ..."
   /opt/chunter/bin/update
+  echo2console "Done."
 }
 
 # main
