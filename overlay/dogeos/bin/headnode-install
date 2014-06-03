@@ -242,6 +242,13 @@ dogeosJoinCluster()
   fi
 }
 
+dogeosFindFiFoZoneIp()
+{
+  cp findnicip.js /zones/$fifoZoneUUID/root/tmp/
+  ret=$(zlogin $fifoZoneUUID "/opt/local/bin/node /tmp/findnicip.js")
+  rm /zones/$fifoZoneUUID/root/tmp/findnicip.js
+}
+
 dogeosGenData()
 {
   datafile=$1
@@ -670,6 +677,12 @@ dogeosJoinCluster
 
 backtitle="DogeOS: Congratulation!"
 
-dialog --backtitle "$backtitle" --msgbox "All done. FiFo zone is setup and running alive now!" 10 60
+dogeosFindFiFoZoneIp
+fifo_zone_ip="$val"
+
+dialog --backtitle "$backtitle" --msgbox "All done. FiFo zone is setup and running alive now!
+
+Please go to http://${fifo_zone_ip/net0 /} to manage your cloud!
+" 10 60
 
 cd $oldcwd
