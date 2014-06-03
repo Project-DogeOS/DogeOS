@@ -1,0 +1,19 @@
+{
+  "autoboot": true,
+  "alias": "pxe-server",
+  "hostname": "pxe-server",
+  "brand": "joyent",
+  "max_physical_memory": {{=it.max_physical_memory || 64}},
+  "quota": "{{=it.quota || 2}}",
+  "image_uuid": "17c98640-1fdb-11e3-bf51-3708ce78e75a",
+  "nics": [
+    {
+      "interface": "net0",
+      "nic_tag": "{{=it.net0nictag || 'admin'}}",
+      "dhcp_server": "1",
+      "ip": "{{=it.net0ip}}"
+      {{? it.net0gateway}},"gateway": "{{=it.net0gateway}}"{{?}}
+      {{? it.net0netmask}},"netmask": "{{=it.net0netmask}}"{{?}}
+    }
+  ]
+}
