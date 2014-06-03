@@ -19,9 +19,6 @@ rsync -avz isomnt/ workplace/
 # copy dogeos overlay
 scp -r ${DOGEOS_OVERLAY}/* workplace/
 
-# make necessary dirs
-mkdir -p workplace/dogeos/mnt/dogeos-extra
-
 # copy chutner release
 scp -r ${CHUNTER_DIR}/* workplace/dogeos/share/fifo/
 
