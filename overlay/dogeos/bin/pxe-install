@@ -1,0 +1,50 @@
+#!/usr/bin/bash
+
+set -x trace
+
+PATH=/usr/sbin:/usr/bin
+export PATH
+
+oldcwd=`pwd`
+cd /dogeos/bin
+
+. ./common.sh
+
+DOGEOS_HOME=/dogeos
+DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
+NODE=/usr/node/bin/node
+
+dogeosPxeInstallPkg()
+{
+  pkgin -y install tftp-hpa dnsmasq
+}
+
+dogeosPxeTftpSetup()
+{
+  mkdir /tftpboot
+  echo "tftp dgram udp wait root /opt/local/sbin/in.tftpd in.tftpd -s /tftpboot" > /tmp/tftp.inetd
+  svcadm enable inetd
+  inetconv -i /tmp/tftp.inetd -o /tmp
+  svccfg import /tmp/tftp-udp.xml
+  svcadm restart tftp/udp
+}
+
+dogeosPxeDnsmasqSetup()
+{
+  local tmpjsondata=/tmp/dnsmasq-conf-`date +%s`.data
+  rm -rf $tmpjsondata
+  touch $tmpfifodata
+  # gendata
+  cp /opt/local/etc/dnsmasq.conf /opt/local/etc/dnsmasq.conf.old
+  cat $tmpjsondata | $NODE doTool.js ../share/pxe/dnsmasq.conf >/opt/local/etc/dnsmasq.conf
+  svcadm enable dnsmasq
+}
+
+dogeosPxeCopyFiles()
+{
+  local extraPath=$1
+  local uuid=$2
+  cp $extraPath/dogeos/pxe/pxegrub /zones/$uuid/root/tftpboot
+  rsync -avz $extraPath/platform /zones/$uuid/root/tftpboot/
+  rsync -avz $extraPath/boot /zones/$uuid/root/tftpboot/
+}
