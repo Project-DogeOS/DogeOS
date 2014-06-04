@@ -2,3 +2,15 @@
 
 set -x trace
 
+PATH=/usr/sbin:/usr/bin
+export PATH
+
+oldcwd=`pwd`
+cd /dogeos/bin
+
+. ./common.sh
+
+DOGEOS_HOME=/dogeos
+DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
+NODE=/usr/node/bin/node
+
