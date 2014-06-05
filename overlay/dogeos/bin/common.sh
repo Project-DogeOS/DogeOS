@@ -128,3 +128,114 @@ promptval()
   done
 }
 
+# zexec_uuid is the global var to use with zlogin
+zexec_uuid=
+
+# set zexec_uuid
+setZexecUUID()
+{
+  zexec_uuid=$1
+}
+
+zexec()
+{
+  if ![ -z "$zexec_uuid" ]; then
+    zlogin $zexec_uuid $*
+  fi
+}
+
+# find GZ nic info, store them in 3 global array
+#   gz_tags: nic tags, e.g., ['admin']
+#   gz_macs: nic macs, e.g., ['d4:be:d9:a5:a5:85']
+#   gz_links: nic links, e.g., ['e1000g0']
+#   gz_nic_cnt: the count of nics
+dogeosGetGZNicInfo()
+{
+  # Get local NIC info
+  gz_nic_cnt=0
+  while read -r mac tag link; do
+    ((gz_nic_cnt++))
+    gz_tags[$nic_cnt]=$tag
+    gz_macs[$nic_cnt]=$mac
+    gz_links[$nic_cnt]=$link
+  done < <($NODE findnictag.js 2>/dev/null)
+}
+
+# find GZ admin nic's IP, return in $val
+dogeosGetAdminNicIp()
+{
+  local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
+  val="$nicAdminIp"
+}
+
+# decide live media type, return in $val
+dogeosFindLiveMediaType()
+{
+  if [ -f /dogeos/liveusb ]; then
+    val="usb"
+  else
+    val="dvd"
+  fi
+}
+
+# decide live media dev path, if multiple, make user choose, return in $val
+dogeosDecideMediaDev()
+{
+  local live_media_type=$1
+
+  local dev_cnt=0
+  local devs=
+  declare -a dev_paths
+  declare -a dev_names
+
+  echo "Now finding your dev mount point (this will take up to 1min)..."
+  while IFS=, read -r path name; do
+    ((dev_cnt++))
+    dev_paths[$dev_cnt]=$path
+    dev_names[$dev_cnt]=$name
+    if [ $dev_cnt -eq 1 ]; then
+      devs=${devs}"$dev_cnt \"$name\" on"
+    else
+      devs=${devs}" $dev_cnt \"$name\" off"
+    fi
+  done < <($NODE findrmdev.js $live_media_type 2>/dev/null)
+
+  local message=
+  if [ $dev_cnt == 0 ]; then
+    message="Can not found the dev object of DogeOS Live.
+
+You may have chosen wrong. Please restart this program.
+"
+    dialog --backtitle "$backtitle" --msgbox "$message" 10 60
+    exit 1
+  fi
+
+  local ret=
+  local selected=
+  val=
+  if [ $dev_cnt == 1 ]; then
+    val=${dev_paths[1]}
+    return
+  fi
+
+  message="Your DogeOS Live type is: ${live_media_type}, but multiple media devices found. Please select your device of DogeOS Live:"
+  while [ /usr/bin/true ]; do
+    selected=$(dialog --backtitle "$backtitle" --radiolist "$message" 10 60 $dev_cnt $devs)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
+
+  val=${dev_paths[$selected]}
+}
+
+# fine zone ip by its UUID, return in $val
+dogeosFindZoneIp()
+{
+  local UUID=$1
+  cp findnicip.js /zones/$UUID/root/tmp/
+  setZexecUUID $UUID
+  ret=$(zexec "/opt/local/bin/node /tmp/findnicip.js")
+  rm /zones/$UUID/root/tmp/findnicip.js
+}

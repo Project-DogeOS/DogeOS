@@ -20,9 +20,6 @@ val=
 backtitle=
 live_media=
 live_media_path=
-declare -a states
-declare -a nics
-declare -a assigned
 fifo_zone_json=
 
 ntp_hosts="pool.ntp.org"
@@ -116,21 +113,21 @@ dogeosCreateVm()
 
 dogeosInstallComponents()
 {
-  echo "Start install components for zone:" ${fifoZoneUUID} "..."
-  local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
-  local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
-  zlogin $fifoZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
-  zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
-  zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
-  zlogin $fifoZoneUUID "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
-  zlogin $fifoZoneUUID pkgin -fy up
-  zlogin $fifoZoneUUID "pkgin -y in nginx fifo-snarl"
-  zlogin $fifoZoneUUID "pkgin -y in fifo-sniffle"
-  zlogin $fifoZoneUUID "pkgin -y in fifo-howl"
-  zlogin $fifoZoneUUID "pkgin -y in fifo-wiggle"
-  zlogin $fifoZoneUUID "pkgin -y in fifo-jingles"
-  zlogin $fifoZoneUUID cp /opt/local/fifo-jingles/config/nginx.conf /opt/local/etc/nginx/nginx.conf
-  zlogin $fifoZoneUUID cp /opt/local/etc/pkgin/repositories.conf.bak /opt/local/etc/pkgin/repositories.conf
+  dogeosGetAdminNicIp
+  local nicAdminIp="$val"
+  echo "Start install components for zone:" $fifoZoneUUID "..."
+  zexec "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zexec cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zexec "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
+  zexec "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zexec pkgin -fy up
+  zexec "pkgin -y in nginx fifo-snarl"
+  zexec "pkgin -y in fifo-sniffle"
+  zexec "pkgin -y in fifo-howl"
+  zexec "pkgin -y in fifo-wiggle"
+  zexec "pkgin -y in fifo-jingles"
+  zexec cp /opt/local/fifo-jingles/config/nginx.conf /opt/local/etc/nginx/nginx.conf
+  zexec cp /opt/local/etc/pkgin/repositories.conf.bak /opt/local/etc/pkgin/repositories.conf
   echo "Done"
 }
 
@@ -151,7 +148,7 @@ dogeosEnableSvcs()
       fi
 
       echo "Try to enable svc $svc ..."
-      zlogin $fifoZoneUUID svcadm enable $svc
+      zexec svcadm enable $svc
       if [ $? -eq 0 ]; then
         echo "OK"
       else
@@ -159,7 +156,7 @@ dogeosEnableSvcs()
       fi
 
       echo "Now verifying svc $svc ..."
-      ret=$(zlogin $fifoZoneUUID svcs $svc | grep "online" | grep $svc)
+      ret=$(zexec svcs $svc | grep "online" | grep $svc)
       if [ -z "$ret" ]; then
         echo "oops, will retry in 1 second..."
       else
@@ -182,7 +179,7 @@ dogeosEnableSvcs()
       fi
 
       echo "Validate fifo service $svc ..."
-      zlogin $fifoZoneUUID /opt/local/fifo-$svc/bin/$svc ping
+      zexec /opt/local/fifo-$svc/bin/$svc ping
       if [ $? -eq 0 ]; then
         done=1
       else
@@ -193,7 +190,7 @@ dogeosEnableSvcs()
   done
 
   echo "Services enabled: "
-  zlogin $fifoZoneUUID svcs epmd snarl sniffle howl wiggle nginx
+  zexec svcs epmd snarl sniffle howl wiggle nginx
   echo "Done"
 }
 
@@ -201,27 +198,27 @@ dogeosPostConf()
 {
   echo "Start to do post-configuration ..."
   adminPasswd=$1
-  zlogin $fifoZoneUUID fifoadm users add admin
-  zlogin $fifoZoneUUID fifoadm users grant admin ...
-  zlogin $fifoZoneUUID fifoadm users passwd admin $adminPasswd
+  zexec fifoadm users add admin
+  zexec fifoadm users grant admin ...
+  zexec fifoadm users passwd admin $adminPasswd
 
   local message="Create default user group with basic permissions?"
   dialog --backtitle "$backtitle" --yesno "$message" 10 60
   local ret=$?
   if [ $? == 0 ]; then
     echo "Create default user group..."
-    local UsersUUID=$(zlogin $fifoZoneUUID fifoadm roles add Users)
+    local UsersUUID=$(zexec fifoadm roles add Users)
     echo "Assign basic permissions to default user group..."
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud cloud status
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud datasets list
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud networks list
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud ipranges list
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud packages list
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud vms list
-    zlogin $fifoZoneUUID fifoadm roles grant Users cloud vms create
-    zlogin $fifoZoneUUID fifoadm roles grant Users hypervisors _ create
-    zlogin $fifoZoneUUID fifoadm roles grant Users datasets _ create
-    zlogin $fifoZoneUUID fifoadm roles grant Users roles $UserUUID get
+    zexec fifoadm roles grant Users cloud cloud status
+    zexec fifoadm roles grant Users cloud datasets list
+    zexec fifoadm roles grant Users cloud networks list
+    zexec fifoadm roles grant Users cloud ipranges list
+    zexec fifoadm roles grant Users cloud packages list
+    zexec fifoadm roles grant Users cloud vms list
+    zexec fifoadm roles grant Users cloud vms create
+    zexec fifoadm roles grant Users hypervisors _ create
+    zexec fifoadm roles grant Users datasets _ create
+    zexec fifoadm roles grant Users roles $UserUUID get
   else
     echo "As you wish, skipped"
   fi
@@ -236,17 +233,10 @@ dogeosJoinCluster()
 
     for svc in $fifosvcs
     do
-      zlogin $fifoZoneUUID /opt/local/fifo-$svc/bin/$svc-admin join $svc@$join_cluster
+      zexec /opt/local/fifo-$svc/bin/$svc-admin join $svc@$join_cluster
       echo "$svc join cluster: $svc@$join_cluster done with code:" $?
     done
   fi
-}
-
-dogeosFindFiFoZoneIp()
-{
-  cp findnicip.js /zones/$fifoZoneUUID/root/tmp/
-  ret=$(zlogin $fifoZoneUUID "/opt/local/bin/node /tmp/findnicip.js")
-  rm /zones/$fifoZoneUUID/root/tmp/findnicip.js
 }
 
 dogeosGenData()
@@ -308,75 +298,22 @@ Would you like to continue to setup?"
   dogeosTestCancelled $? "noconfirm"
 }
 
-dogeosFindLiveMediaType()
-{
-  if [ -f /dogeos/liveusb ]; then
-    val="usb"
-  else
-    val="dvd"
-  fi
-}
-
-dogeosDecideMediaDev()
-{
-  local live_media_type=$1
-
-  local dev_cnt=0
-  local devs=
-  declare -a dev_paths
-  declare -a dev_names
-
-  echo "Now finding your dev mount point (this will take up to 1min)..."
-  while IFS=, read -r path name; do
-    ((dev_cnt++))
-    dev_paths[$dev_cnt]=$path
-    dev_names[$dev_cnt]=$name
-    if [ $dev_cnt -eq 1 ]; then
-      devs=${devs}"$dev_cnt \"$name\" on"
-    else
-      devs=${devs}" $dev_cnt \"$name\" off"
-    fi
-  done < <($NODE findrmdev.js $live_media_type 2>/dev/null)
-
-  local message=
-  if [ $dev_cnt == 0 ]; then
-    message="Can not found the dev object of DogeOS Live.
-
-You may have chosen wrong. Please restart this program.
-"
-    dialog --backtitle "$backtitle" --msgbox "$message" 10 60
-    exit 1
-  fi
-
-  local ret=
-  local selected=
-  val=
-  if [ $dev_cnt == 1 ]; then
-    val=${dev_paths[1]}
-    return
-  fi
-
-  message="Your DogeOS Live type is: ${live_media_type}, but multiple media devices found. Please select your device of DogeOS Live:"
-  while [ /usr/bin/true ]; do
-    selected=$(dialog --backtitle "$backtitle" --radiolist "$message" 10 60 $dev_cnt $devs)
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    break
-  done
-
-  val=${dev_paths[$selected]}
-}
-
 dogeosChooseNicTag()
 {
   local ret=
   local nics=
   local i=1
-  while [ $i -le $nic_cnt ]; do
+
+  if [ $gz_nic_cnt -eq 1]; then
+    val=${gz_tags[0]}
+    return
+  fi
+
+  while [ $i -le $gz_nic_cnt ]; do
     if [ $i -eq 1 ]; then
-      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${links[$i]} ${macs[$i]} ${tags[$i]}`
+      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
     else
-      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${links[$i]} ${macs[$i]} ${tags[$i]}`
+      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
     fi
     ((i++))
   done
@@ -385,13 +322,13 @@ dogeosChooseNicTag()
   local selected=
 
   while [ /usr/bin/true ]; do
-    selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 $nic_cnt $nics)
+    selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 $gz_nic_cnt $nics)
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     break
   done
 
-  val=${tags[$selected]}
+  val=${gz_tags[$selected]}
 }
 
 dogeosSetIP()
@@ -624,24 +561,18 @@ dogeosGenZoneConf()
 # preparation
 trap sigexit SIGINT
 
-# Get local NIC info
-nic_cnt=0
-while read -r mac tag link; do
-  ((nic_cnt++))
-  tags[$nic_cnt]=$tag
-  macs[$nic_cnt]=$mac
-  links[$nic_cnt]=$link
-done < <($NODE findnictag.js 2>/dev/null)
+dogeosGetGZNicInfo
 
 # now the guts
 backtitle="DogeOS: Welcome!"
 
 dogeosWelcome
+
+# decide the live media type
 dogeosFindLiveMediaType
 live_media=$val
 dogeosDecideMediaDev $live_media
 live_media_path="$val"
-echo $live_media_path
 
 backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
 
@@ -656,6 +587,8 @@ dogeosPrepareResources
 dogeosImportImg
 dogeosFixJoyentManifest
 dogeosCreateVm $fifo_zone_json
+
+setZexecUUID $fifoZoneUUID
 dogeosInstallComponents
 dogeosEnableSvcs
 dogeosPostConf $root_shadow
@@ -664,7 +597,7 @@ dogeosJoinCluster
 
 backtitle="DogeOS: Congratulation!"
 
-dogeosFindFiFoZoneIp
+dogeosFindZoneIp $fifoZoneUUID
 fifo_zone_ip="$val"
 
 dialog --backtitle "$backtitle" --msgbox "All done. FiFo zone is setup and running alive now!
