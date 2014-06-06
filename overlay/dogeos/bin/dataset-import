@@ -14,3 +14,137 @@ DOGEOS_HOME=/dogeos
 DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
 NODE=/usr/node/bin/node
 
+live_media=
+live_media_path=
+fifo_snarl_token=
+fifo_api_ip=
+fifo_admin=
+fifo_admin_passwd=
+
+dogeosDatasetPrepareResources()
+{
+  echo "Start preparing resources in $DOGEOS_EXTRA ... "
+  mkdir -p $DOGEOS_EXTRA
+  if [ "$live_media" == "usb" ]; then
+    mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
+  else # dvd
+    mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
+  fi
+  echo "Done"
+}
+
+dogeosDatasetCloseResources()
+{
+  umount $DOGEOS_EXTRA
+}
+
+dogeosDatasetAskFifoApiIP()
+{
+  if [ -n "$fifo_api_ip" ]; then
+    return
+  fi
+
+  local message="Please input your FiFo API IP:
+(IPv4 n.n.n.n)
+"
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "192.168.1.100")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    is_net "$val" || val=""
+    [ -n "$val" ] && break
+    dlg --msgbox "A valid IPv4 (n.n.n.n) must be provided." 10 60
+  done
+
+  fifo_api_ip="$ret"
+}
+
+dogeosDatasetAskAdmin()
+{
+  if [ -n "$fifo_admin"]; then
+    if [ -n "$fifo_admin_passwd"]; then
+      return
+    fi
+  fi
+
+  local message="Please input FiFo admin account name:"
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    [ -n "$val" ] && break
+  done
+  fifo_admin="$ret"
+
+  message="Please input FiFo admin account password:"
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    [ -n "$val" ] && break
+  done
+  fifo_admin_passwd="$ret"
+}
+
+dogeosDatasetSelect()
+{
+  local options=
+  local count=1
+  declare -A files
+  for file in $(ls *.gz)
+  do
+    options=$options`printf "%d %s off" $count $file `
+    files[$count]=$file
+    ((count++))
+  done
+  local message="Select the dataset to import:"
+  local selected=
+  while [ /usr/bin/true ]; do
+    selected=$(dlg --stdout --no-cancel --radiolist "$message" 10 60 $gz_nic_cnt $nics)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
+  val=${files[$selected]/\.gz/}
+}
+
+dogeosDatasetImport()
+{
+  local m="$1.dsmanifest"
+  local d="$1.gz"
+
+  local endpoint=http://$fifo_api_ip
+
+  fifo_snarl_token=$(curl -v -X POST $endpoint/api/0.1.0/sessions -H "Content-type:application/json;charset=UTF-8" -H "Accept:application/json" -d "{\"password\": \"$fifo_admin_passwd\", \"user\": \"$fifo_admin\"}" 2>&1 | grep -w "< x-snarl-token:" | awk '{ print $3; }')
+  if [ -z "$fifo_api_ip" ]; then
+    failAndExit "Can not login $endpoint with $fifo_admin($fifo_admin_passwd). Please retry."
+  fi
+  local uuid=$(cat $m | json uuid)
+  curl -v -X POST $endpoint/api/0.1.0/datasets/$uuid/ -H "X-Snarl-Token:$fifo_snarl_token" -H "Content-type:application/json;charset=UTF-8" -H "Accept:application/json" -d @$m
+  curl -v -X PUT $endpoint/api/0.1.0/datasets/$uuid/dataset.gz -H "X-Snarl-Token:$fifo_snarl_token" -H "Content-Type:application/x-gzip" -H "Content-type:application/json;charset=UTF-8" -H "Accept:application/json" -T $d
+}
+
+# main guts start here
+
+dlg_backtitle="DogeOS: Datasets import wizard."
+
+# usage: dataset-import <fifo_api_ip> <fifo_admin> <fifo_admin_passwd>
+
+fifo_api_ip=$1
+fifo_admin=$2
+fifo_admin_passwd=$3
+
+dogeosDatasetAskFifoApiIP
+dogeosDatasetAskAdmin
+
+dogeosDatasetPrepareResources
+
+dogeosDatasetSelect
+toImport="$val"
+
+dogeosDatasetImport $toImport
+
+dogeosDatasetCloseResources

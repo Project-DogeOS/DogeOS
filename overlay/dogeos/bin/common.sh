@@ -1,4 +1,8 @@
+# constant
 OSPREFIX=[DogeOS]:
+
+# val is the common return value var
+var=
 
 echo2console()
 {
@@ -128,6 +132,12 @@ promptval()
   done
 }
 
+failAndExit()
+{
+  echo $@
+  exit 1
+}
+
 # zexec_uuid is the global var to use with zlogin
 zexec_uuid=
 
@@ -142,6 +152,13 @@ zexec()
   if ![ -z "$zexec_uuid" ]; then
     zlogin $zexec_uuid $*
   fi
+}
+
+# dlg to show dialog, set backtitle first
+dlg_backtitle=
+dlg()
+{
+  dialog --backtitle "$backtitle" $*
 }
 
 # find GZ nic info, store them in 3 global array
@@ -164,9 +181,17 @@ dogeosGetGZNicInfo()
 # find GZ admin nic's IP, return in $val
 dogeosGetAdminNicIp()
 {
-  local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
-  local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
-  val="$nicAdminIp"
+  local dev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local ip=`ifconfig $dev | grep -w inet | awk '{ print $2 }'`
+  val="$ip"
+}
+
+# find GZ admin nic's MAC, return in $val
+dogeosGetAdminNicMac()
+{
+  local dev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local mac=`ifconfig $dev | grep -w 'ether' | awk '{ print $2 }'`
+  val="$mac"
 }
 
 # decide live media type, return in $val
@@ -238,4 +263,165 @@ dogeosFindZoneIp()
   setZexecUUID $UUID
   ret=$(zexec "/opt/local/bin/node /tmp/findnicip.js")
   rm /zones/$UUID/root/tmp/findnicip.js
+}
+
+# for test dialog result == cancelled?
+#   param 1: return code
+#   param 2: confirm need?
+# return in global var tocont
+dogeosTestCancelled()
+{
+  local ret=$1
+  local confirm=$2
+  tocont=""
+
+  if [ $ret -ne 0 ]; then
+    if [ -z $confirm ]; then
+      dialog --yesno "Really cancel?" 10 60
+      if [ $? -ne 0 ]; then
+        tocont="yes"
+        return
+      fi
+    fi
+    echo "As your wish, cancelled. Bye."
+    exit $ret
+  fi
+}
+
+# dlg for user to input a network IP, or dhcp
+#   param #1: msg for what
+# return in global var ret
+dogeosSetIP()
+{
+  local ret=
+  local what=$1
+  local message="$what:
+(IPv4 n.n.n.n or 'dhcp')
+"
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "dhcp")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    if [[ "$val" != "dhcp" ]]; then
+      is_net "$val" || val=""
+    fi
+    [ -n "$val" ] && break
+    dlg --msgbox "A valid IPv4 (n.n.n.n) or 'dhcp' must be provided." 10 60
+  done
+}
+
+# dlg for user to input a network IP
+#   param #1: msg for what
+#   param #2: default value
+# return in global var ret
+dogeosSetNetIP()
+{
+  local ret=
+  local what=$1
+  local default=$2
+  local message="$what:
+(IPv4 n.n.n.n)
+"
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "$default")
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    is_net "$val" || val=""
+    [ -n "$val" ] && break
+    dlg --msgbox "A valid network mask (n.n.n.n) must be provided." 10 60
+  done
+}
+
+# dlg for user to input a root passwd
+#   param #1: msg for what
+# return in global var ret
+dogeosSetRootPasswd()
+{
+  local ret=
+  local what=$1
+  val=""
+  while [ -z "$val" ]; do
+    val=$(dlg --stdout --insecure --no-cancel --passwordbox "Enter password for root of $what:" 10 60)
+    ret=$?
+    dogeosTestCancelled $ret
+    if [ -z "$val" ]; then
+      dlg --msgbox "A non-empty password must be provided." 10 60
+      continue
+    fi
+    local cval=
+    cval=$(dlg --stdout --insecure --no-cancel --passwordbox "Confirm password for root of $what:" 10 60)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    [ "$val" == "$cval" ] && break
+    val=""
+    dlg --msgbox "Two passwords do not match, please re-enter." 10 60
+  done
+}
+
+# dlg for user to select a GZ nictag
+#   param #1: msg for what
+# return in global var ret
+dogeosChooseNicTag()
+{
+  local what=$1
+  local ret=
+  local nics=
+  local i=1
+
+  if [ $gz_nic_cnt -eq 1]; then
+    val=${gz_tags[0]}
+    return
+  fi
+
+  while [ $i -le $gz_nic_cnt ]; do
+    if [ $i -eq 1 ]; then
+      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
+    else
+      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
+    fi
+    ((i++))
+  done
+
+  local message="Select the NIC of global zone to be used for $what:"
+  local selected=
+
+  while [ /usr/bin/true ]; do
+    selected=$(dlg --stdout --no-cancel --radiolist "$message" 10 60 $gz_nic_cnt $nics)
+    ret=$?
+    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
+    break
+  done
+
+  val=${gz_tags[$selected]}
+}
+
+dogeosCheckNetworkReachability()
+{
+  ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!"
+  echo "datasets.joyent.com reached!"
+
+  ping release.project-fifo.net 10 || failAndExit "Reach release.project-fifo.net failed. Check your network!"
+  echo "release.project-fifo.net reached!"
+}
+
+dogeosImportImg()
+{
+  echo "Start import datasets ..."
+  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
+  echo "Done"
+}
+
+dogeosFixJoyentManifest()
+{
+  echo "Start check joyent manifest..."
+  local fixes="joyent joyent-minimal"
+  for fix in $fixes
+  do
+    echo "Fix manifest of brand $fix..."
+    cp ../share/joyent/manifest/sysconfig.xml /zones/manifests/$fix/milestone/
+    echo "Done"
+  done
+  echo "All Done"
 }

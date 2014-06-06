@@ -16,8 +16,6 @@ DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
 NODE=/usr/node/bin/node
 
 # Defaults
-val=
-backtitle=
 live_media=
 live_media_path=
 fifo_zone_json=
@@ -34,12 +32,6 @@ net0_gateway=
 net0_netmask=
 
 # Functions
-
-failAndExit()
-{
-  echo $@
-  exit 1
-}
 
 dogeosPrepareResources()
 {
@@ -66,37 +58,6 @@ dogeosCloseResources()
     kill `cat $DOGEOS_HOME/var/repo-joyent.pid`
   fi
   umount $DOGEOS_EXTRA
-}
-
-dogeosCheckNetworkReachability()
-{
-  ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!"
-  echo "datasets.joyent.com reached!"
-
-  ping release.project-fifo.net 10 || failAndExit "Reach release.project-fifo.net failed. Check your network!"
-  echo "release.project-fifo.net reached!"
-}
-
-dogeosImportImg()
-{
-  echo "Start import datasets ..."
-  #imgadm update
-  #imgadm import 17c98640-1fdb-11e3-bf51-3708ce78e75a
-  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
-  echo "Done"
-}
-
-dogeosFixJoyentManifest()
-{
-  echo "Start check joyent manifest..."
-  local fixes="joyent joyent-minimal"
-  for fix in $fixes
-  do
-    echo "Fix manifest of brand $fix..."
-    cp ../share/joyent/manifest/sysconfig.xml /zones/manifests/$fix/milestone/
-    echo "Done"
-  done
-  echo "All Done"
 }
 
 dogeosCreateVm()
@@ -203,7 +164,7 @@ dogeosPostConf()
   zexec fifoadm users passwd admin $adminPasswd
 
   local message="Create default user group with basic permissions?"
-  dialog --backtitle "$backtitle" --yesno "$message" 10 60
+  dlg --yesno "$message" 10 60
   local ret=$?
   if [ $? == 0 ]; then
     echo "Create default user group..."
@@ -265,110 +226,18 @@ sigexit()
   exit 0
 }
 
-dogeosTestCancelled()
-{
-  local ret=$1
-  local confirm=$2
-  tocont=""
-
-  if [ $ret -ne 0 ]; then
-    if [ -z $confirm ]; then
-      dialog --yesno "Really cancel the installation?" 10 60
-      if [ $? -ne 0 ]; then
-        tocont="yes"
-        return
-      fi
-    fi
-    echo "As your wish, cancelled. Bye."
-    exit $ret
-  fi
-}
-
 dogeosWelcome()
 {
   local message="
-This program will help you to setup the FIFO Zone of Headnode.
+This wizard will help you to setup the FiFo Zone of Headnode.
 
-You must answer some questions to help us build the FIFO Zone configuration.
+You must answer some questions to help us build the FiFo Zone configuration.
 
 You will have a chance to review and correct your answers, as well as a chance to edit the final configuration, before it is applied.
 
 Would you like to continue to setup?"
-  dialog --backtitle "$backtitle" --title "DogeOS: Headnode Setup Wizard" --yesno "$message" 0 0
+  dlg --title "DogeOS: FiFo Zone setup wizard" --yesno "$message" 0 0
   dogeosTestCancelled $? "noconfirm"
-}
-
-dogeosChooseNicTag()
-{
-  local ret=
-  local nics=
-  local i=1
-
-  if [ $gz_nic_cnt -eq 1]; then
-    val=${gz_tags[0]}
-    return
-  fi
-
-  while [ $i -le $gz_nic_cnt ]; do
-    if [ $i -eq 1 ]; then
-      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
-    else
-      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
-    fi
-    ((i++))
-  done
-
-  local message="Select the NIC of global zone to be used for FIFO zone:"
-  local selected=
-
-  while [ /usr/bin/true ]; do
-    selected=$(dialog --backtitle "$backtitle" --stdout --no-cancel --radiolist "$message" 10 60 $gz_nic_cnt $nics)
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    break
-  done
-
-  val=${gz_tags[$selected]}
-}
-
-dogeosSetIP()
-{
-  local ret=
-  local message="Set IP for the default NIC of FIFO zone:
-(IPv4 n.n.n.n or 'dhcp')
-"
-  local input=
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "$message" 10 60 "dhcp")
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    if [[ "$val" != "dhcp" ]]; then
-      is_net "$val" || val=""
-    fi
-    [ -n "$val" ] && break
-    dialog --backtitle "$backtitle" --msgbox "A valid IPv4 (n.n.n.n) or 'dhcp' must be provided." 10 60
-  done
-}
-
-dogeosSetNetIP()
-{
-  local ret=
-  local what=$1
-  local default=$2
-  local message="$what:
-(IPv4 n.n.n.n)
-"
-  local input=
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "$message" 10 60 "$default")
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    is_net "$val" || val=""
-    [ -n "$val" ] && break
-    dialog --backtitle "$backtitle" --msgbox "A valid network mask (n.n.n.n) must be provided." 10 60
-  done
 }
 
 dogeosSetMem()
@@ -376,15 +245,15 @@ dogeosSetMem()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "1024")
+    val=$(dlg --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "1024")
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
-      dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
+      dlg --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
       if [ $val -lt 1023 ]; then
-        dialog --backtitle "$backtitle" --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        dlg --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
         val=""
         continue
       fi
@@ -398,15 +267,15 @@ dogeosSetDiskQuota()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "Disk Quota for FIFO zone (in GB):" 10 60 "20")
+    val=$(dlg --stdout --no-cancel --inputbox "Disk Quota for FIFO zone (in GB):" 10 60 "20")
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
-      dialog --backtitle "$backtitle" --msgbox "A valid decimal number must be provided." 10 60
+      dlg --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
       if [ $val -lt 19 ]; then
-        dialog --backtitle "$backtitle" --msgbox "Disk <20GB will probably cause failures of some FiFo zone services. Please assign more." 10 60
+        dlg --msgbox "Disk <20GB will probably cause failures of some FiFo zone services. Please assign more." 10 60
         val=""
         continue
       fi
@@ -415,41 +284,19 @@ dogeosSetDiskQuota()
   done
 }
 
-dogeosSetRootPasswd()
-{
-  local ret=
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --insecure --no-cancel --passwordbox "Enter password for root of FIFO zone:" 10 60)
-    ret=$?
-    dogeosTestCancelled $ret
-    if [ -z "$val" ]; then
-      dialog --backtitle "$backtitle" --msgbox "A non-empty password must be provided." 10 60
-      continue
-    fi
-    local cval=
-    cval=$(dialog --backtitle "$backtitle" --stdout --insecure --no-cancel --passwordbox "Confirm password for root of FIFO zone:" 10 60)
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    [ "$val" == "$cval" ] && break
-    val=""
-    dialog --backtitle "$backtitle" --msgbox "Two passwords do not match, please re-enter." 10 60
-  done
-}
-
 dogeosReview()
 {
   local ret=
   local message="Please verify that there inputs are correct:
 
-FIFO zone quota
+FiFo Zone quota
 
   Memory (in MB): $fifo_vm_mem
   Disk (in GB): $fifo_vm_quota
 
-FIFO zone NIC configuration
+FiFo Zone NIC configuration
 
-  MAC address: $net0_nic
+  NIC tag: $net0_nic
   IP address: $net0_ip"
 
   if [[ $net0_ip != 'dhcp' ]]; then
@@ -470,7 +317,7 @@ Will join cluster @: $join_cluster
 "
   fi
 
-  dialog --backtitle "$backtitle" --yesno "$message" 30 60
+  dlg --yesno "$message" 30 60
   ret=$?
   if [ $ret -eq 0 ]; then
     val=""
@@ -488,7 +335,7 @@ dogeosAskJoinCluster()
   local input=
   val=""
   while [ -z "$val" ]; do
-    val=$(dialog --backtitle "$backtitle" --stdout --no-cancel --inputbox "$message" 10 60 "")
+    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "")
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if [[ "$val" != "" ]]; then
@@ -497,16 +344,16 @@ dogeosAskJoinCluster()
       val="skip"
     fi
     [ -n "$val" ] && break
-    dialog --backtitle "$backtitle" --msgbox "A valid IPv4 (n.n.n.n) must be provided." 10 60
+    dlg --msgbox "A valid IPv4 (n.n.n.n) must be provided." 10 60
   done
 }
 
 dogeosAskConfiguration()
 {
   while [ /usr/bin/true ]; do
-    dogeosChooseNicTag
+    dogeosChooseNicTag "FiFo Zone"
     net0_nic="$val"
-    dogeosSetIP
+    dogeosSetIP "Set IP for the default NIC of FiFo Zone"
     net0_ip="$val"
     if [[ $net0_ip != 'dhcp' ]]; then
       dogeosSetNetIP "Set Net Mask for the default NIC of FIFO zone" "$net0_netmask"
@@ -518,7 +365,7 @@ dogeosAskConfiguration()
     fifo_vm_mem="$val"
     dogeosSetDiskQuota
     fifo_vm_quota="$val"
-    dogeosSetRootPasswd
+    dogeosSetRootPasswd "FiFo Zone"
     root_shadow="$val"
     dogeosAskJoinCluster
     join_cluster="$val"
@@ -543,10 +390,10 @@ dogeosGenZoneConf()
   touch $tmpfifojson
   cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
 
-  local message="Continue with following json configuration of FIFO zone ?
+  local message="Continue with following json configuration of FiFo Zone ?
 
   "$(cat $tmpfifojson | json)
-  dialog --backtitle "$backtitle" --yesno "$message" 30 60
+  dlg --yesno "$message" 30 60
   if [ $? -ne 0 ]; then
     exit $?
   fi
@@ -564,7 +411,7 @@ trap sigexit SIGINT
 dogeosGetGZNicInfo
 
 # now the guts
-backtitle="DogeOS: Welcome!"
+dlg_backtitle="DogeOS: Welcome!"
 
 dogeosWelcome
 
@@ -574,11 +421,11 @@ live_media=$val
 dogeosDecideMediaDev $live_media
 live_media_path="$val"
 
-backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
+dlg_backtitle="DogeOS > FiFo Zone: Network, Mem, Disk & Passwd Configuration"
 
 dogeosAskConfiguration
 
-backtitle="DogeOS: Preparing to provision FIFO zone"
+dlg_backtitle="DogeOS > FiFo Zone: Preparing to provision FIFO Zone"
 
 dogeosGenZoneConf
 fifo_zone_json="$val"
@@ -595,12 +442,12 @@ dogeosPostConf $root_shadow
 dogeosCloseResources
 dogeosJoinCluster
 
-backtitle="DogeOS: Congratulation!"
+dlg_backtitle="DogeOS > FiFo Zone: Congratulation!"
 
 dogeosFindZoneIp $fifoZoneUUID
 fifo_zone_ip="$val"
 
-dialog --backtitle "$backtitle" --msgbox "All done. FiFo zone is setup and running alive now!
+dlg --msgbox "All done. FiFo Zone is running alive now!
 
 Please go to http://${fifo_zone_ip/net0 /} to manage your cloud!
 " 10 60
