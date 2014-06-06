@@ -14,8 +14,49 @@ DOGEOS_HOME=/dogeos
 DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
 NODE=/usr/node/bin/node
 
+# globals
+pxeZoneUUID=
+gzNicAdminIp=
+
+live_media=
+live_media_path=
+
+dogeosPxeDetectDhcpServer()
+{
+  echo "Try to sniff dhcp servers in your network, be patient..."
+  dogeosGetAdminNicMac
+  local mac="$val"
+  val=$($NODE dhcpdetect.js "$mac" 5 2>/dev/null) # if true, val will be "detected"
+  echo "Done."
+}
+
+dogeosPxePrepareResources()
+{
+  echo "Start preparing resources in $DOGEOS_EXTRA ... "
+  mkdir -p $DOGEOS_EXTRA
+  if [ "$live_media" == "usb" ]; then
+    mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
+  else # dvd
+    mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
+  fi
+  $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/pxe 8082 &
+  echo $! >$DOGEOS_HOME/var/repo-pxe.pid
+  echo "Done"
+}
+
+dogeosPxeCloseResources()
+{
+  if [ -f $DOGEOS_HOME/var/repo-pxe.pid ]; then
+    kill `cat $DOGEOS_HOME/var/repo-pxe.pid`
+  fi
+  umount $DOGEOS_EXTRA
+}
+
 dogeosPxeInstallPkg()
 {
+  zlogin $pxeZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zlogin $pxeZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zlogin $pxeZoneUUID "echo \"http://$gzNicAdminIp:8082\" >\"/opt/local/etc/pkgin/repositories.conf\""
   pkgin -y install tftp-hpa dnsmasq
 }
 
@@ -48,3 +89,24 @@ dogeosPxeCopyFiles()
   rsync -avz $extraPath/platform /zones/$uuid/root/tftpboot/
   rsync -avz $extraPath/boot /zones/$uuid/root/tftpboot/
 }
+
+# main guts start here
+
+dlg_backtitle="DogeOS: PXE server wizard."
+
+dogeosPxeDetectDhcpServer
+if [ "$val" == "detected" ]; then
+  dlg --msgbox "You probably already have another DHCP service in your network.
+
+There will be conflicts if you setup dogeos PXE server. Please resolve that before try again to setup the PXE server." 15 60
+  exit 1
+fi
+
+dogeosPxePrepareResources
+
+dogeosPxeInstallPkg
+dogeosPxeTftpSetup
+dogeosPxeDnsmasqSetup
+dogeosPxeCopyFiles
+
+dogeosPxeCloseResources

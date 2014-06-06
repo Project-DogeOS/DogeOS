@@ -1,4 +1,8 @@
+# constant
 OSPREFIX=[DogeOS]:
+
+# val is the common return value var
+var=
 
 echo2console()
 {
@@ -128,6 +132,12 @@ promptval()
   done
 }
 
+failAndExit()
+{
+  echo $@
+  exit 1
+}
+
 # zexec_uuid is the global var to use with zlogin
 zexec_uuid=
 
@@ -142,6 +152,13 @@ zexec()
   if ![ -z "$zexec_uuid" ]; then
     zlogin $zexec_uuid $*
   fi
+}
+
+# dlg to show dialog, set backtitle first
+dlg_backtitle=
+dlg()
+{
+  dialog --backtitle "$backtitle" $*
 }
 
 # find GZ nic info, store them in 3 global array
@@ -164,9 +181,17 @@ dogeosGetGZNicInfo()
 # find GZ admin nic's IP, return in $val
 dogeosGetAdminNicIp()
 {
-  local nicAdminDev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
-  local nicAdminIp=`ifconfig $nicAdminDev | grep -w inet | awk '{ print $2 }'`
-  val="$nicAdminIp"
+  local dev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local ip=`ifconfig $dev | grep -w inet | awk '{ print $2 }'`
+  val="$ip"
+}
+
+# find GZ admin nic's MAC, return in $val
+dogeosGetAdminNicMac()
+{
+  local dev=`$NODE findnictag.js | grep -w 'admin' | awk '{ print $3 }'`
+  local mac=`ifconfig $dev | grep -w 'ether' | awk '{ print $2 }'`
+  val="$mac"
 }
 
 # decide live media type, return in $val
@@ -238,4 +263,27 @@ dogeosFindZoneIp()
   setZexecUUID $UUID
   ret=$(zexec "/opt/local/bin/node /tmp/findnicip.js")
   rm /zones/$UUID/root/tmp/findnicip.js
+}
+
+# for test dialog result == cancelled?
+#   param 1: return code
+#   param 2: confirm need?
+# return in global var tocont
+dogeosTestCancelled()
+{
+  local ret=$1
+  local confirm=$2
+  tocont=""
+
+  if [ $ret -ne 0 ]; then
+    if [ -z $confirm ]; then
+      dialog --yesno "Really cancel?" 10 60
+      if [ $? -ne 0 ]; then
+        tocont="yes"
+        return
+      fi
+    fi
+    echo "As your wish, cancelled. Bye."
+    exit $ret
+  fi
 }
