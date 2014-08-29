@@ -229,7 +229,7 @@ sigexit()
 dogeosWelcome()
 {
   local message="
-This wizard will help you to setup the FiFo Zone of Headnode.
+This wizard will help you to setup the FiFo Zone.
 
 You must answer some questions to help us build the FiFo Zone configuration.
 
