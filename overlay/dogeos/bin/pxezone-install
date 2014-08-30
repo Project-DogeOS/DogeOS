@@ -1,0 +1,246 @@
+#!/usr/bin/bash
+
+set -x trace
+
+PATH=/usr/sbin:/usr/bin
+export PATH
+
+oldcwd=`pwd`
+cd /dogeos/bin
+
+. ./common.sh
+
+DOGEOS_HOME=/dogeos
+DOGEOS_EXTRA=$DOGEOS_HOME/mnt/dogeos-extra
+NODE=/usr/node/bin/node
+
+# globals
+pxeZoneUUID=
+gzNicAdminIp=
+
+live_media=
+live_media_path=
+
+net0_nic=
+net0_ip=
+net0_netmask=
+net0_gateway=
+vm_mem=
+vm_quota=
+root_shadow=
+
+dogeosPxeDetectDhcpServer()
+{
+  echo "Try to sniff dhcp servers in your network, be patient..."
+  dogeosGetAdminNicMac
+  local mac="$val"
+  val=$($NODE dhcpdetect.js "$mac" 5 2>/dev/null) # if true, val will be "detected"
+  echo "Done."
+}
+
+dogeosPxePrepareResources()
+{
+  echo "Start preparing resources in $DOGEOS_EXTRA ... "
+  mkdir -p $DOGEOS_EXTRA
+  if [ "$live_media" == "usb" ]; then
+    mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
+  else # dvd
+    mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
+  fi
+  $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/pxe 8082 &
+  echo $! >$DOGEOS_HOME/var/repo-pxe.pid
+  echo "Done"
+}
+
+dogeosPxeCloseResources()
+{
+  if [ -f $DOGEOS_HOME/var/repo-pxe.pid ]; then
+    kill `cat $DOGEOS_HOME/var/repo-pxe.pid`
+  fi
+  umount $DOGEOS_EXTRA
+}
+
+dogeosPxeInstallPkg()
+{
+  zlogin $pxeZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zlogin $pxeZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zlogin $pxeZoneUUID "echo \"http://$gzNicAdminIp:8082\" >\"/opt/local/etc/pkgin/repositories.conf\""
+  pkgin -y install tftp-hpa dnsmasq
+}
+
+dogeosPxeTftpSetup()
+{
+  mkdir /tftpboot
+  echo "tftp dgram udp wait root /opt/local/sbin/in.tftpd in.tftpd -s /tftpboot" > /tmp/tftp.inetd
+  svcadm enable inetd
+  inetconv -i /tmp/tftp.inetd -o /tmp
+  svccfg import /tmp/tftp-udp.xml
+  svcadm restart tftp/udp
+}
+
+dogeosPxeDnsmasqSetup()
+{
+  local tmpjsondata=/tmp/dnsmasq-conf-`date +%s`.data
+  rm -rf $tmpjsondata
+  touch $tmpfifodata
+  # gendata
+  cp /opt/local/etc/dnsmasq.conf /opt/local/etc/dnsmasq.conf.old
+  cat $tmpjsondata | $NODE doTool.js ../share/pxe/dnsmasq.conf >/opt/local/etc/dnsmasq.conf
+  svcadm enable dnsmasq
+}
+
+dogeosPxeCopyFiles()
+{
+  local extraPath=$1
+  local uuid=$2
+  cp $extraPath/dogeos/pxe/pxegrub /zones/$uuid/root/tftpboot
+  rsync -avz $extraPath/platform /zones/$uuid/root/tftpboot/
+  rsync -avz $extraPath/boot /zones/$uuid/root/tftpboot/
+}
+
+dogeosPxeWelcome()
+{
+  local message="
+This wizard will help you to setup a PXE Zone to boot other servers.
+
+You must answer some questions to help us build the PXE Zone configuration.
+
+You will have a chance to review and correct your answers, as well as a chance to edit the final configuration, before it is applied.
+
+Would you like to continue to setup?"
+  dlg --title "DogeOS: PXE Zone setup wizard" --yesno "$message" 0 0
+  dogeosTestCancelled $? "noconfirm"
+}
+
+dogeosPxeReview()
+{
+  local ret=
+  local message="Please verify that there inputs are correct:
+
+PXE Zone quota
+
+  Memory (in MB): $vm_mem
+  Disk (in GB): $vm_quota
+
+FIFO zone NIC configuration
+
+  NIC tag: $net0_nic
+  IP address: $net0_ip
+  Netmask: $net0_netmask
+  Gateway: $net0_gateway
+"
+
+  dlg --yesno "$message" 30 60
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    val=""
+  else
+    val="retry"
+  fi
+}
+
+dogeosPxeAskConfiguration()
+{
+  while [ /usr/bin/true ]; do
+    dogeosChooseNicTag "FiFo Zone"
+    net0_nic="$val"
+    dogeosSetNetIP "Set IP for the NIC of PXE Zone"
+    net0_ip="$val"
+    dogeosSetNetIP "Set Net Mask for the default NIC of FIFO zone" "$net0_netmask"
+    net0_netmask="$val"
+    dogeosSetNetIP "Set Gateway for the default NIC of FIFO zone" "$net0_gateway"
+    net0_gateway="$val"
+    vm_mem="64" # fix to be 64MB
+    vm_quota="2" # fix to be 2GB
+    dogeosSetRootPasswd "PXE Zone"
+    root_shadow="$val"
+    dogeosReview
+    if [ -z "$val" ]; then
+      break
+    fi
+  done
+}
+
+dogeosPxeGenData()
+{
+  datafile=$1
+  echo "{" >>$1
+  echo "\"max_physical_memory\":" $vm_mem >>$1
+  echo "," "\"quota\":" $vm_quota >>$1
+  echo "," "\"net0nictag\":" "\"$net0_nic\"" >>$1
+  echo "," "\"net0ip\":" "\"$net0_ip\"" >>$1
+  echo "," "\"resolvers\": [ \"8.8.8.8\", \"8.8.4.4\" ]" >>$1
+  echo "," "\"net0gateway\":" "\"$net0_gateway\"" >>$1
+  echo "," "\"net0netmask\":" "\"$net0_netmask\"" >>$1
+  echo "}" >>$1
+}
+
+dogeosPxeGenZoneConf()
+{
+  # generate zone configure data
+  local tmpdata=/tmp/pxejson-`date +%s`.data
+  rm -rf $tmpdata
+  touch $tmpdata
+  dogeosPxeGenData $tmpfifodata
+
+  # generate zone json
+  local tmpfifojson=/tmp/pxejson-`date +%s`.json
+  rm -rf $tmpjson
+  touch $tmpjson
+  cat $tmpdata | $NODE doTool.js ../share/pxe/pxe-zone.json | json >$tmpjson
+
+  local message="Continue with following json configuration of PXE Zone ?
+
+  "$(cat $tmpjson | json)
+  dlg --yesno "$message" 30 60
+  if [ $? -ne 0 ]; then
+    exit $?
+  fi
+
+  val="$tmpjson"
+}
+
+# main guts start here
+
+dogeosGetGZNicInfo
+
+dogeosPxeDetectDhcpServer
+if [ "$val" == "detected" ]; then
+  dlg --msgbox "You probably already have another DHCP service in your network.
+
+There will be conflicts if you setup dogeos PXE server. Please resolve that before try again to setup the PXE server." 15 60
+  exit 1
+fi
+
+dlg_backtitle="DogeOS: Welcome!"
+
+dogeosPxeWelcome
+
+dlg_backtitle="DogeOS > PXE Zone: Network Configuration"
+
+dogeosPxeAskConfiguration
+
+dlg_backtitle="DogeOS > PXE Zone: Preparing to provision PXE Zone"
+
+dogeosPxeGenZoneConf
+pxe_zone_json="$val"
+
+dogeosPxePrepareResources
+dogeosImportImg
+dogeosFixJoyentManifest
+dogeosCreateVm $pxe_zone_json
+
+dogeosPxeInstallPkg
+dogeosPxeTftpSetup
+dogeosPxeDnsmasqSetup
+dogeosPxeCopyFiles
+
+dogeosPxeCloseResources
+
+dlg_backtitle="DogeOS > PXE Zone: Congratulation!"
+
+dlg --msgbox "All done. PXE Zone is running alive now!
+
+You can turn on other servers in the same network to boot."
+
+cd $oldcwd

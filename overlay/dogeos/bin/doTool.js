@@ -20,7 +20,7 @@ var doT = (function() {
 			conditional: /\{\{\?(\?)?\s*([\s\S]*?)\s*\}\}/g,
 			iterate:     /\{\{~\s*(?:\}\}|([\s\S]+?)\s*\:\s*([\w$]+)\s*(?:\:\s*([\w$]+))?\s*\}\})/g,
 			varname:	'it',
-			strip:		true,
+			strip:		false, // make doT in default no strip mode
 			append:		true,
 			selfcontained: false
 		},

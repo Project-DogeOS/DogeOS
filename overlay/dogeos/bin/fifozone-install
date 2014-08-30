@@ -60,37 +60,6 @@ dogeosCloseResources()
   umount $DOGEOS_EXTRA
 }
 
-dogeosCheckNetworkReachability()
-{
-  ping datasets.joyent.com 10 || failAndExit "Reach datasets.joyent.com failed. Check your network!"
-  echo "datasets.joyent.com reached!"
-
-  ping release.project-fifo.net 10 || failAndExit "Reach release.project-fifo.net failed. Check your network!"
-  echo "release.project-fifo.net reached!"
-}
-
-dogeosImportImg()
-{
-  echo "Start import datasets ..."
-  #imgadm update
-  #imgadm import 17c98640-1fdb-11e3-bf51-3708ce78e75a
-  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
-  echo "Done"
-}
-
-dogeosFixJoyentManifest()
-{
-  echo "Start check joyent manifest..."
-  local fixes="joyent joyent-minimal"
-  for fix in $fixes
-  do
-    echo "Fix manifest of brand $fix..."
-    cp ../share/joyent/manifest/sysconfig.xml /zones/manifests/$fix/milestone/
-    echo "Done"
-  done
-  echo "All Done"
-}
-
 dogeosCreateVm()
 {
   vmconf=$1
@@ -260,13 +229,14 @@ sigexit()
 dogeosWelcome()
 {
   local message="
-This program will help you to setup the FIFO Zone of Headnode.
+This wizard will help you to setup the FiFo Zone.
 
-You must answer some questions to help us build the FIFO Zone configuration.
+You must answer some questions to help us build the FiFo Zone configuration.
 
 You will have a chance to review and correct your answers, as well as a chance to edit the final configuration, before it is applied.
 
 Would you like to continue to setup?"
+<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
   dlg --title "DogeOS: Headnode Setup Wizard" --yesno "$message" 0 0
   dogeosTestCancelled $? "noconfirm"
 }
@@ -342,6 +312,12 @@ dogeosSetNetIP()
   done
 }
 
+=======
+  dlg --title "DogeOS: FiFo Zone setup wizard" --yesno "$message" 0 0
+  dogeosTestCancelled $? "noconfirm"
+}
+
+>>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 dogeosSetMem()
 {
   local ret=
@@ -386,6 +362,7 @@ dogeosSetDiskQuota()
   done
 }
 
+<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
 dogeosSetRootPasswd()
 {
   local ret=
@@ -408,19 +385,21 @@ dogeosSetRootPasswd()
   done
 }
 
+=======
+>>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 dogeosReview()
 {
   local ret=
   local message="Please verify that there inputs are correct:
 
-FIFO zone quota
+FiFo Zone quota
 
   Memory (in MB): $fifo_vm_mem
   Disk (in GB): $fifo_vm_quota
 
-FIFO zone NIC configuration
+FiFo Zone NIC configuration
 
-  MAC address: $net0_nic
+  NIC tag: $net0_nic
   IP address: $net0_ip"
 
   if [[ $net0_ip != 'dhcp' ]]; then
@@ -475,9 +454,9 @@ dogeosAskJoinCluster()
 dogeosAskConfiguration()
 {
   while [ /usr/bin/true ]; do
-    dogeosChooseNicTag
+    dogeosChooseNicTag "FiFo Zone"
     net0_nic="$val"
-    dogeosSetIP
+    dogeosSetIP "Set IP for the default NIC of FiFo Zone"
     net0_ip="$val"
     if [[ $net0_ip != 'dhcp' ]]; then
       dogeosSetNetIP "Set Net Mask for the default NIC of FIFO zone" "$net0_netmask"
@@ -489,7 +468,7 @@ dogeosAskConfiguration()
     fifo_vm_mem="$val"
     dogeosSetDiskQuota
     fifo_vm_quota="$val"
-    dogeosSetRootPasswd
+    dogeosSetRootPasswd "FiFo Zone"
     root_shadow="$val"
     dogeosAskJoinCluster
     join_cluster="$val"
@@ -514,7 +493,7 @@ dogeosGenZoneConf()
   touch $tmpfifojson
   cat $tmpfifodata | $NODE doTool.js ../share/fifo/fifo-zone.json | json >$tmpfifojson
 
-  local message="Continue with following json configuration of FIFO zone ?
+  local message="Continue with following json configuration of FiFo Zone ?
 
   "$(cat $tmpfifojson | json)
   dlg --yesno "$message" 30 60
@@ -545,11 +524,19 @@ live_media=$val
 dogeosDecideMediaDev $live_media
 live_media_path="$val"
 
+<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
 dlg_backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
 
 dogeosAskConfiguration
 
 dlg_backtitle="DogeOS: Preparing to provision FIFO zone"
+=======
+dlg_backtitle="DogeOS > FiFo Zone: Network, Mem, Disk & Passwd Configuration"
+
+dogeosAskConfiguration
+
+dlg_backtitle="DogeOS > FiFo Zone: Preparing to provision FIFO Zone"
+>>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 dogeosGenZoneConf
 fifo_zone_json="$val"
@@ -566,12 +553,20 @@ dogeosPostConf $root_shadow
 dogeosCloseResources
 dogeosJoinCluster
 
+<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
 dlg_backtitle="DogeOS: Congratulation!"
+=======
+dlg_backtitle="DogeOS > FiFo Zone: Congratulation!"
+>>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 dogeosFindZoneIp $fifoZoneUUID
 fifo_zone_ip="$val"
 
+<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
 dlg --msgbox "All done. FiFo zone is setup and running alive now!
+=======
+dlg --msgbox "All done. FiFo Zone is running alive now!
+>>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 Please go to http://${fifo_zone_ip/net0 /} to manage your cloud!
 " 10 60
