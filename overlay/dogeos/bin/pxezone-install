@@ -226,7 +226,7 @@ dogeosPxeGenZoneConf
 pxe_zone_json="$val"
 
 dogeosPxePrepareResources
-dogeosImportImg
+dogeosImportImg "base64-13.2.1"
 dogeosFixJoyentManifest
 dogeosCreateVm $pxe_zone_json
 

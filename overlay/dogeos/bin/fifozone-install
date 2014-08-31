@@ -236,88 +236,10 @@ You must answer some questions to help us build the FiFo Zone configuration.
 You will have a chance to review and correct your answers, as well as a chance to edit the final configuration, before it is applied.
 
 Would you like to continue to setup?"
-<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
-  dlg --title "DogeOS: Headnode Setup Wizard" --yesno "$message" 0 0
-  dogeosTestCancelled $? "noconfirm"
-}
-
-dogeosChooseNicTag()
-{
-  local ret=
-  local nics=
-  local i=1
-
-  if [ $gz_nic_cnt -eq 1]; then
-    val=${gz_tags[0]}
-    return
-  fi
-
-  while [ $i -le $gz_nic_cnt ]; do
-    if [ $i -eq 1 ]; then
-      nics=${nics}`printf "%d Link(%s),MAC(%s),TAG(%s) on" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
-    else
-      nics=${nics}`printf " %d Link(%s),MAC(%s),TAG(%s) off" $i ${gz_links[$i]} ${gz_macs[$i]} ${gz_tags[$i]}`
-    fi
-    ((i++))
-  done
-
-  local message="Select the NIC of global zone to be used for FIFO zone:"
-  local selected=
-
-  while [ /usr/bin/true ]; do
-    selected=$(dlg --stdout --no-cancel --radiolist "$message" 10 60 $gz_nic_cnt $nics)
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    break
-  done
-
-  val=${gz_tags[$selected]}
-}
-
-dogeosSetIP()
-{
-  local ret=
-  local message="Set IP for the default NIC of FIFO zone:
-(IPv4 n.n.n.n or 'dhcp')
-"
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "dhcp")
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    if [[ "$val" != "dhcp" ]]; then
-      is_net "$val" || val=""
-    fi
-    [ -n "$val" ] && break
-    dlg --msgbox "A valid IPv4 (n.n.n.n) or 'dhcp' must be provided." 10 60
-  done
-}
-
-dogeosSetNetIP()
-{
-  local ret=
-  local what=$1
-  local default=$2
-  local message="$what:
-(IPv4 n.n.n.n)
-"
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dlg --stdout --no-cancel --inputbox "$message" 10 60 "$default")
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    is_net "$val" || val=""
-    [ -n "$val" ] && break
-    dlg --msgbox "A valid network mask (n.n.n.n) must be provided." 10 60
-  done
-}
-
-=======
   dlg --title "DogeOS: FiFo Zone setup wizard" --yesno "$message" 0 0
   dogeosTestCancelled $? "noconfirm"
 }
 
->>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 dogeosSetMem()
 {
   local ret=
@@ -362,31 +284,6 @@ dogeosSetDiskQuota()
   done
 }
 
-<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
-dogeosSetRootPasswd()
-{
-  local ret=
-  val=""
-  while [ -z "$val" ]; do
-    val=$(dlg --stdout --insecure --no-cancel --passwordbox "Enter password for root of FIFO zone:" 10 60)
-    ret=$?
-    dogeosTestCancelled $ret
-    if [ -z "$val" ]; then
-      dlg --msgbox "A non-empty password must be provided." 10 60
-      continue
-    fi
-    local cval=
-    cval=$(dlg --stdout --insecure --no-cancel --passwordbox "Confirm password for root of FIFO zone:" 10 60)
-    ret=$?
-    dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
-    [ "$val" == "$cval" ] && break
-    val=""
-    dlg --msgbox "Two passwords do not match, please re-enter." 10 60
-  done
-}
-
-=======
->>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 dogeosReview()
 {
   local ret=
@@ -524,25 +421,17 @@ live_media=$val
 dogeosDecideMediaDev $live_media
 live_media_path="$val"
 
-<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
-dlg_backtitle="DogeOS: Network, Mem, Disk & Passwd Configuration"
-
-dogeosAskConfiguration
-
-dlg_backtitle="DogeOS: Preparing to provision FIFO zone"
-=======
 dlg_backtitle="DogeOS > FiFo Zone: Network, Mem, Disk & Passwd Configuration"
 
 dogeosAskConfiguration
 
 dlg_backtitle="DogeOS > FiFo Zone: Preparing to provision FIFO Zone"
->>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 dogeosGenZoneConf
 fifo_zone_json="$val"
 
 dogeosPrepareResources
-dogeosImportImg
+dogeosImportImg "leofs-1.1.1"
 dogeosFixJoyentManifest
 dogeosCreateVm $fifo_zone_json
 
@@ -553,20 +442,12 @@ dogeosPostConf $root_shadow
 dogeosCloseResources
 dogeosJoinCluster
 
-<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
-dlg_backtitle="DogeOS: Congratulation!"
-=======
 dlg_backtitle="DogeOS > FiFo Zone: Congratulation!"
->>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 dogeosFindZoneIp $fifoZoneUUID
 fifo_zone_ip="$val"
 
-<<<<<<< HEAD:overlay/dogeos/bin/headnode-install
-dlg --msgbox "All done. FiFo zone is setup and running alive now!
-=======
 dlg --msgbox "All done. FiFo Zone is running alive now!
->>>>>>> e93f83c1d0624d1a69c8c89f04995e9ec9011ed2:overlay/dogeos/bin/fifozone-install
 
 Please go to http://${fifo_zone_ip/net0 /} to manage your cloud!
 " 10 60
