@@ -431,7 +431,7 @@ dogeosGenZoneConf
 fifo_zone_json="$val"
 
 dogeosPrepareResources
-dogeosImportImg
+dogeosImportImg "leofs-1.1.1"
 dogeosFixJoyentManifest
 dogeosCreateVm $fifo_zone_json
 

@@ -408,8 +408,9 @@ dogeosCheckNetworkReachability()
 
 dogeosImportImg()
 {
+  local name=$1
   echo "Start import datasets ..."
-  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.dsmanifest  -f $DOGEOS_EXTRA/dogeos/datasets/base64-13.2.1.zfs.gz
+  imgadm install -m $DOGEOS_EXTRA/dogeos/datasets/${name}.dsmanifest -f $DOGEOS_EXTRA/dogeos/datasets/${name}.zfs.gz
   echo "Done"
 }
 
