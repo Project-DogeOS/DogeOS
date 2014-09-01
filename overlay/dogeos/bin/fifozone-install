@@ -92,6 +92,24 @@ dogeosInstallComponents()
   echo "Done"
 }
 
+dogeosEnableLeoFS()
+{
+  echo "Enable leofs services of zone:" $fifoZoneUUID "..."
+
+  zexec "svcadm enable leofs/manager0"
+  zexec "svcadm enable leofs/manager1"
+  #zexec "leofs-adm status" # Repeate until a status screen is shown and Mnesia is started
+
+  zexec "svcadm enable leofs/storage"
+  #zexec "leofs-adm status" #Repeate until the storage node is shown
+  zexec "leofs-adm start"
+
+  zexec "svcadm enable leofs/gateway"
+  #zexec "leofs-adm status" #Repeate until the gateway node is shown
+
+  echo "Done"
+}
+
 dogeosEnableSvcs()
 {
   echo "Enable services of zone:" $fifoZoneUUID "..."
@@ -159,27 +177,27 @@ dogeosPostConf()
 {
   echo "Start to do post-configuration ..."
   adminPasswd=$1
-  zexec fifoadm users add admin
-  zexec fifoadm users grant admin ...
-  zexec fifoadm users passwd admin $adminPasswd
+  zexec fifoadm users add default admin
+  zexec fifoadm users grant default admin ...
+  zexec fifoadm users passwd default admin $adminPasswd
 
   local message="Create default user group with basic permissions?"
   dlg --yesno "$message" 10 60
   local ret=$?
   if [ $? == 0 ]; then
     echo "Create default user group..."
-    local UsersUUID=$(zexec fifoadm roles add Users)
+    local UsersUUID=$(zexec fifoadm roles add default Users)
     echo "Assign basic permissions to default user group..."
-    zexec fifoadm roles grant Users cloud cloud status
-    zexec fifoadm roles grant Users cloud datasets list
-    zexec fifoadm roles grant Users cloud networks list
-    zexec fifoadm roles grant Users cloud ipranges list
-    zexec fifoadm roles grant Users cloud packages list
-    zexec fifoadm roles grant Users cloud vms list
-    zexec fifoadm roles grant Users cloud vms create
-    zexec fifoadm roles grant Users hypervisors _ create
-    zexec fifoadm roles grant Users datasets _ create
-    zexec fifoadm roles grant Users roles $UserUUID get
+    zexec fifoadm roles grant default Users cloud cloud status
+    zexec fifoadm roles grant default Users cloud datasets list
+    zexec fifoadm roles grant default Users cloud networks list
+    zexec fifoadm roles grant default Users cloud ipranges list
+    zexec fifoadm roles grant default Users cloud packages list
+    zexec fifoadm roles grant default Users cloud vms list
+    zexec fifoadm roles grant default Users cloud vms create
+    zexec fifoadm roles grant default Users hypervisors _ create
+    zexec fifoadm roles grant default Users datasets _ create
+    zexec fifoadm roles grant default Users roles $UserUUID get
   else
     echo "As you wish, skipped"
   fi
@@ -229,7 +247,7 @@ sigexit()
 dogeosWelcome()
 {
   local message="
-This wizard will help you to setup the FiFo Zone of Headnode.
+This wizard will help you to setup the FiFo Zone.
 
 You must answer some questions to help us build the FiFo Zone configuration.
 
@@ -431,12 +449,13 @@ dogeosGenZoneConf
 fifo_zone_json="$val"
 
 dogeosPrepareResources
-dogeosImportImg
+dogeosImportImg "leofs-1.1.1"
 dogeosFixJoyentManifest
 dogeosCreateVm $fifo_zone_json
 
 setZexecUUID $fifoZoneUUID
 dogeosInstallComponents
+dogeosEnableLeoFS
 dogeosEnableSvcs
 dogeosPostConf $root_shadow
 dogeosCloseResources

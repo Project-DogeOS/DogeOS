@@ -1,0 +1,6 @@
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/dnsmasq-2.67.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/gcc47-libs-4.7.3nb4.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/ncurses-5.9nb3.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/pkg_install-info-4.5nb3.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/readline-6.3.tgz
+http://pkgsrc.joyent.com/packages/SmartOS/2014Q2/x86_64/All/tftp-hpa-5.2.tgz
