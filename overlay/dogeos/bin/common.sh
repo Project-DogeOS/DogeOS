@@ -149,8 +149,8 @@ setZexecUUID()
 
 zexec()
 {
-  if ![ -z "$zexec_uuid" ]; then
-    zlogin $zexec_uuid $*
+  if ! [ -z "$zexec_uuid" ]; then
+    zlogin $zexec_uuid "$@"
   fi
 }
 
@@ -158,7 +158,7 @@ zexec()
 dlg_backtitle=
 dlg()
 {
-  dialog --backtitle "$backtitle" $*
+  dialog --backtitle "$backtitle" "$@"
 }
 
 # find GZ nic info, store them in 3 global array
@@ -370,7 +370,7 @@ dogeosChooseNicTag()
   local nics=
   local i=1
 
-  if [ $gz_nic_cnt -eq 1]; then
+  if [ $gz_nic_cnt -eq 1 ]; then
     val=${gz_tags[0]}
     return
   fi
