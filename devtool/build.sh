@@ -14,6 +14,9 @@ DATASETS_UUID=17c98640-1fdb-11e3-bf51-3708ce78e75a
 DOGEOS_VER=DogeOS-${SMARTOS_VER}-${FIFO_VER}
 
 # Internal vars
+
+WGET="wget --no-check-certificate"
+
 CWD=`pwd`
 BTD=$(readlink -e $(dirname $0)) # build tool dir
 DOGED=$(readlink -e $BTD/../) # dogeos repo dir
@@ -23,8 +26,8 @@ DOGED=$(readlink -e $BTD/../) # dogeos repo dir
 # SmartOS distros
 rm -rf smartos; mkdir smartos
 cd smartos
-  wget https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}.iso
-  wget https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}-USB.img.bz2
+  $WGET https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}.iso
+  $WGET https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}-USB.img.bz2
   bunzip smartos-${SMARTOS_VER}-USB.img.bz2
 cd -
 
@@ -35,8 +38,8 @@ rm -rf dogeos
 # chunter, in chunter dir
 rm -rf chunter; mkdir chunter
 cd chunter
-  wget http://release.project-fifo.net/chunter/rel/chunter-latest.gz
-  wget http://release.project-fifo.net/chunter/rel/chunter.version
+  $WGET http://release.project-fifo.net/chunter/rel/chunter-latest.gz
+  $WGET http://release.project-fifo.net/chunter/rel/chunter.version
 cd -
 
 # prepare extra dir
@@ -45,26 +48,26 @@ mkdir -p extra/dogeos
 # Fifo distro, in fifo dir
 rm -rf extra/vers/fifo; mkdir -p extra/vers/fifo-${FIFO_VER}
 cd extra/vers/fifo-${FIFO_VER}
-  wget http://release.project-fifo.net/pkg/rel/pkg_summary.gz
+  $WGET http://release.project-fifo.net/pkg/rel/pkg_summary.gz
   gunzip pkg_summary.gz
   gzip -c pkg_summary >pkg_summary.gz
   bzip2 pkg_summary
-  wget -i ../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
+  $WGET -i ../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
 cd -
 ln -s ../vers/fifo-${FIFO_VER} extra/dogeos/fifo
 
 # fifo zone img datasets
 rm -rf extra/vers/fifo; mkdir -p extra/vers/datasets-${DATASETS_NAME}
 cd extra/vers/datasets-${DATASETS_NAME}
-  wget https://datasets.joyent.com/datasets/${DATASETS_UUID} -O ${DATASETS_NAME}.dsmanifest
-  wget https://datasets.joyent.com/datasets/${DATASETS_UUID}/${DATASETS_NAME}.zfs.gz
+  $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID} -O ${DATASETS_NAME}.dsmanifest
+  $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID}/${DATASETS_NAME}.zfs.gz
 cd -
 ln -s ../vers/datasets-${DATASETS_NAME} extra/dogeos/datasets
 
 # joyent pkgs, in joyent dir
 rm -rf extra/vers/joyent; mkdir -p extra/vers/joyent-${JOYENT_VER}
 cd extra/vers/joyent-${JOYENT_VER}
-  wget -i ../dogeos/devtool/extra/joyent-filelist-${JOYENT_VER}.txt
+  $WGET -i ../dogeos/devtool/extra/joyent-filelist-${JOYENT_VER}.txt
 cd -
 ln -s ../vers/joyent-${JOYENT_VER} extra/dogeos/joyent
 
