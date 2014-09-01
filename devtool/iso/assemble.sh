@@ -16,10 +16,10 @@ sdev=$(lofiadm -a ${ISO_PATH})
 mount $sdev isomnt
 
 # copy iso files
-cp -rL isomnt/* cdrom/
+cp -rvL isomnt/* cdrom/
 
 # copy dogeos boot_archive
-cp $BOOT_ARCHIVE_DIR/* ./amd64/
+cp -rvL $BOOT_ARCHIVE_DIR/* ./amd64/
 
 # gen iso
 LC_ALL=C mkisofs -R -b boot/grub/stage2_eltorito --follow-links -no-emul-boot -boot-load-size 4 -boot-info-table -quiet -o dogeos-${DOGEOS_VER}.iso cdrom/

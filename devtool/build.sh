@@ -4,6 +4,9 @@
 #  /opt/dogeos-build/
 #  (make sure it is empty, and build.sh is in it)
 
+# debug switch
+#set -x trace
+
 # First please modify following conf vars
 
 SMARTOS_VER=20140501T225642Z
@@ -28,7 +31,7 @@ rm -rf smartos; mkdir smartos
 cd smartos
   $WGET https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}.iso
   $WGET https://us-east.manta.joyent.com//Joyent_Dev/public/SmartOS/${SMARTOS_VER}/smartos-${SMARTOS_VER}-USB.img.bz2
-  bunzip smartos-${SMARTOS_VER}-USB.img.bz2
+  bunzip2 smartos-${SMARTOS_VER}-USB.img.bz2
 cd -
 
 # DogeOS distro, in dogeos dir

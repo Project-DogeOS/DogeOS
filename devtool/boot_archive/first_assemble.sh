@@ -17,10 +17,10 @@ mount $sdev isomnt
 rsync -avz isomnt/ workplace/
 
 # copy dogeos overlay
-scp -r ${DOGEOS_OVERLAY}/* workplace/
+cp -rLv ${DOGEOS_OVERLAY}/* workplace/
 
 # copy chutner release
-scp -r ${CHUNTER_DIR}/* workplace/dogeos/share/fifo/
+cp -rLv ${CHUNTER_DIR}/* workplace/dogeos/share/fifo/
 
 # close lofi devs, rm tmp files
 umount isomnt
