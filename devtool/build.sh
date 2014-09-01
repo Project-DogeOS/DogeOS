@@ -49,30 +49,30 @@ cd -
 mkdir -p extra/dogeos
 
 # Fifo distro, in fifo dir
-rm -rf extra/vers/fifo; mkdir -p extra/vers/fifo-${FIFO_VER}
-cd extra/vers/fifo-${FIFO_VER}
-  $WGET http://release.project-fifo.net/pkg/rel/pkg_summary.gz
-  gunzip pkg_summary.gz
+rm -rf pkgs/fifo-${FIFO_VER}; mkdir -p pkgs/fifo-${FIFO_VER}
+cd pkgs/fifo-${FIFO_VER}
+  $WGET http://release.project-fifo.net/pkg/rel/pkg_summary.bz2
+  bunzip2 pkg_summary.bz2
   gzip -c pkg_summary >pkg_summary.gz
   bzip2 pkg_summary
-  $WGET -i ../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
+  $WGET -i ../../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
 cd -
-ln -s ../vers/fifo-${FIFO_VER} extra/dogeos/fifo
+ln -s ../../pkgs/fifo-${FIFO_VER} extra/dogeos/fifo
 
 # fifo zone img datasets
-rm -rf extra/vers/fifo; mkdir -p extra/vers/datasets-${DATASETS_NAME}
-cd extra/vers/datasets-${DATASETS_NAME}
+rm -rf datasets-${DATASETS_NAME}; mkdir -p datasets-${DATASETS_NAME}
+cd datasets-${DATASETS_NAME}
   $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID} -O ${DATASETS_NAME}.dsmanifest
   $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID}/${DATASETS_NAME}.zfs.gz
 cd -
-ln -s ../vers/datasets-${DATASETS_NAME} extra/dogeos/datasets
+ln -s ../../datasets-${DATASETS_NAME} extra/dogeos/datasets
 
 # joyent pkgs, in joyent dir
-rm -rf extra/vers/joyent; mkdir -p extra/vers/joyent-${JOYENT_VER}
-cd extra/vers/joyent-${JOYENT_VER}
-  $WGET -i ../dogeos/devtool/extra/joyent-filelist-${JOYENT_VER}.txt
+rm -rf pkgs/joyent-{JOYENT_VER}; mkdir -p pkgs/joyent-${JOYENT_VER}
+cd pkgs/joyent-${JOYENT_VER}
+  $WGET -i ../../dogeos/devtool/extra/joyent-filelist-${JOYENT_VER}.txt
 cd -
-ln -s ../vers/joyent-${JOYENT_VER} extra/dogeos/joyent
+ln -s ../../pkgs/joyent-${JOYENT_VER} extra/dogeos/joyent
 
 # prepare the dist dir & change to it
 rm -rf dist; mkdir dist
