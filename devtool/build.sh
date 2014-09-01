@@ -15,6 +15,8 @@ DOGEOS_VER=DogeOS-${SMARTOS_VER}-${FIFO_VER}
 
 # Internal vars
 CWD=`pwd`
+BTD=$(readlink -e $(dirname $0)) # build tool dir
+DOGED=$(readlink -e $BTD/../) # dogeos repo dir
 
 # Step 1: download all required resources
 
@@ -28,9 +30,7 @@ cd -
 
 # DogeOS distro, in dogeos dir
 rm -rf dogeos
-  wget https://github.com/liyu1981/DogeOS/archive/${DOGEOS_VER}.tar.gz
-  tar xzf DogeOS-${DOGEOS_VER}.tar.gz
-mv DogeOS-${DOGEOS_VER} dogeos
+  ln -s $DOGED dogeos # make symlink to dogeos repo
 
 # chunter, in chunter dir
 rm -rf chunter; mkdir chunter

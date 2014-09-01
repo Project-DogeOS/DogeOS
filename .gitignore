@@ -1,3 +1,3 @@
 *~
-src/dogeos/share/fifo/chunter-0.4.3.gz
-
+overlay/dogeos/share/fifo/chunter-*.gz
+build
