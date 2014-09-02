@@ -4,7 +4,7 @@ DOGEOS_VER=$1
 DOGEOS_ISO_PATH=$2
 SMARTOS_USB_PATH=$3
 
-USBIMG=dogeos-${DOGEOS_VER}.img
+USBIMG=${DOGEOS_VER}.img
 USBSIZE=2000000000
 
 # create img file
@@ -20,7 +20,7 @@ fdisk ${udev/lofi/rlofi}
 mkfs -F pcfs -o fat=32 ${udev/lofi/rlofi}:c
 
 # now mount & copy the init files
-rm -rf u
+rm -rf u; mkdir u
 mount -F pcfs $udev:c u
 
 # now mount smartos usb
@@ -31,15 +31,17 @@ mount -F pcfs $sdev:c usbmnt
 # now mount dogeos iso
 idev=$(lofiadm -a $DOGEOS_ISO_PATH)
 rm -rf isomnt; mkdir isomnt
-mount $idev isomnt
+mount -o ro -F hsfs $idev isomnt
 
 # copy files
 rsync -avz isomnt/ u/
-rm u/boot.catalog
-cp -r usbmnt/boot u/
+rm -rf u/boot
+rm -rf u/boot.catalog
+cp -rv usbmnt/boot u/
 
 # enable boot
 umount u
+lofiadm -d $udev
 grub --batch <<____ENDOFGRUBCOMMANDS
 device (hd0) $USBIMG
 root (hd0,0)
@@ -48,6 +50,7 @@ quit
 ____ENDOFGRUBCOMMANDS
 
 # clear devs, remove tmp files
-lofiadm -d $udev
+umount isomnt
+umount usbmnt
 lofiadm -d $sdev
 lofiadm -d $idev
