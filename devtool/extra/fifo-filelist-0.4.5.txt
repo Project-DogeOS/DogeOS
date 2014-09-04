@@ -1,8 +1,8 @@
 http://release.project-fifo.net/pkg/rel/fifo-howl-0.1.13.tgz
 http://release.project-fifo.net/pkg/rel/fifo-jingles-0.3.2p2.tgz
-http://release.project-fifo.net/pkg/rel/fifo-snarl-0.4.5.tgz
-http://release.project-fifo.net/pkg/rel/fifo-sniffle-0.4.5p2.tgz
-http://release.project-fifo.net/pkg/rel/fifo-wiggle-0.5.4.tgz
+http://release.project-fifo.net/pkg/rel/fifo-snarl-0.4.5p5.tgz
+http://release.project-fifo.net/pkg/rel/fifo-sniffle-0.4.5p7.tgz
+http://release.project-fifo.net/pkg/rel/fifo-wiggle-0.5.4p4.tgz
 http://release.project-fifo.net/pkg/rel/leo_gateway-1.0.2.tgz
 http://release.project-fifo.net/pkg/rel/leo_manager-1.0.2.tgz
 http://release.project-fifo.net/pkg/rel/leo_storage-1.0.2.tgz

@@ -6,5 +6,3 @@ http://release.project-fifo.net/pkg/rel/fifo-wiggle-0.5.3.tgz
 http://release.project-fifo.net/pkg/rel/leo_gateway-1.0.1.tgz
 http://release.project-fifo.net/pkg/rel/leo_manager-1.0.1.tgz
 http://release.project-fifo.net/pkg/rel/leo_storage-1.0.1.tgz
-http://release.project-fifo.net/pkg/rel/pkg_summary.bz2
-http://release.project-fifo.net/pkg/rel/pkg_summary.gz
