@@ -5,6 +5,7 @@
      node pkg.js pkg_summary dep <pkg_name>...
      node pkg.js pkg_summary dep_dev <pkg_name>...
      node pkg.js pkg_summary print <pkg_name>
+     node pkg.js pkg_summary latest [option_print_prefix]
  */
 
 var util = require('util');
@@ -150,14 +151,14 @@ function printAll() {
   });
 }
 
-function latest() {
+function latest(printPrefix) {
   var l = {};
   // use comment to differ the pkgs, and assume that pkgs input is in asc order
   allPkgs.forEach(function(pkg) {
     l[pkg['COMMENT']] = pkg['FILE_NAME'];
   });
   Object.keys(l).forEach(function(key) {
-    console.log(l[key]);
+    console.log((printPrefix || '') + l[key]);
   });
 }
 
@@ -178,7 +179,7 @@ loadPkgs(process.argv[2], function() {
         print(process.argv[4]);
         break;
       case 'latest':
-        latest();
+        latest(process.argv[4]);
         break;
     }
   } else {
