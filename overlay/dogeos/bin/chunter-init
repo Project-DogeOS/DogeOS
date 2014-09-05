@@ -81,6 +81,11 @@ else
 fi
 
 startSvc
-tryOnlineUpdate
+# diable this in default, since this may cause the system break
+# e.g., some running dogeos 0.4.5 vers rebooted after 0.6.0 released, may wrongly update
+# chunter to the latest (which will be 0.6.0), but not compatible to other fifo components
+# of 0.4.5
+# TOFIX: only update inside releases, maintain the usability
+#tryOnlineUpdate
 
 exit $SMF_EXIT_OK
