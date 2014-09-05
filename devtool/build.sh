@@ -71,12 +71,12 @@ cd -
 ln -s ../../pkgs/fifo-${FIFO_VER} extra/dogeos/fifo
 
 # fifo zone img datasets
-rm -rf datasets-${DATASETS_NAME}; mkdir -p datasets-${DATASETS_NAME}
-cd datasets-${DATASETS_NAME}
+rm -rf datasets/${DATASETS_NAME}; mkdir -p datasets/${DATASETS_NAME}
+cd datasets/${DATASETS_NAME}
   $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID} -O ${DATASETS_NAME}.dsmanifest
   $WGET https://datasets.joyent.com/datasets/${DATASETS_UUID}/${DATASETS_NAME}.zfs.gz
 cd -
-ln -s ../../datasets-${DATASETS_NAME} extra/dogeos/datasets
+ln -s ../../datasets/${DATASETS_NAME} extra/dogeos/datasets
 
 # joyent pkgs, in joyent dir
 rm -rf pkgs/joyent-{JOYENT_VER}; mkdir -p pkgs/joyent-${JOYENT_VER}
