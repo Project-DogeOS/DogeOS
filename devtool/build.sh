@@ -52,8 +52,9 @@ rm -rf dogeos
 # chunter, in chunter dir
 rm -rf chunter; mkdir chunter
 cd chunter
-  $WGET http://release.project-fifo.net/chunter/rel/chunter-latest.gz
-  $WGET http://release.project-fifo.net/chunter/rel/chunter.version
+  $WGET -i ../../dogeos/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt
+  chunterver=$(basename $(cat ../../dogeos/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt)); chunterver=${chunterver/#chunter-/}; chunterver=${chunterver%.*}
+  echo $chunterver >chunter.version
 cd -
 
 # prepare extra dir
@@ -66,7 +67,7 @@ cd pkgs/fifo-${FIFO_VER}
   bunzip2 pkg_summary.bz2
   gzip -c pkg_summary >pkg_summary.gz
   bzip2 pkg_summary
-  $WGET -i ../../dogeos/devtool/extra/fifo-filelist-${FIFO_VER}.txt
+  $WGET -i ../../dogeos/devtool/filelist/fifo-filelist-${FIFO_VER}.txt
 cd -
 ln -s ../../pkgs/fifo-${FIFO_VER} extra/dogeos/fifo
 
@@ -81,7 +82,7 @@ ln -s ../../datasets/${DATASETS_NAME} extra/dogeos/datasets
 # joyent pkgs, in joyent dir
 rm -rf pkgs/joyent-{JOYENT_VER}; mkdir -p pkgs/joyent-${JOYENT_VER}
 cd pkgs/joyent-${JOYENT_VER}
-  $WGET -i ../../dogeos/devtool/extra/joyent-filelist-${JOYENT_VER}.txt
+  $WGET -i ../../dogeos/devtool/filelist/joyent-filelist-${JOYENT_VER}.txt
 cd -
 ln -s ../../pkgs/joyent-${JOYENT_VER} extra/dogeos/joyent
 
@@ -92,21 +93,21 @@ cd dist
 # Step 2: assemble first boot_archive in dir dist
 rm -rf boot_archive; mkdir boot_archive
 cd boot_archive
-  cp $CWD/dogeos/devtool/boot_archive/* .
-  ./first_assemble.sh $CWD/smartos/smartos-${SMARTOS_VER}.iso $CWD/dogeos $CWD/chunter
+  cp -v $CWD/dogeos/devtool/boot_archive/* .
+  ./assemble.sh $CWD/smartos/smartos-${SMARTOS_VER}.iso $CWD/dogeos $CWD/chunter
 cd -
 
 # Step 3: assemble ISO
 rm -rf iso; mkdir iso
 cd iso
-  cp $CWD/dogeos/devtool/iso/assemble.sh .
+  cp -v $CWD/dogeos/devtool/iso/* .
   ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/boot_archive $CWD/smartos/smartos-${SMARTOS_VER}.iso $CWD/extra
 cd -
 
 # Step 4: assemble USB
 rm -rf usb; mkdir usb
 cd usb
-  cp $CWD/dogeos/devtool/usb/assemble.sh .
+  cp -v $CWD/dogeos/devtool/usb/* .
   ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/iso $CWD/smartos/smartos-${SMARTOS_VER}-USB.img
 cd -
 

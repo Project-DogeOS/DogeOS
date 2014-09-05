@@ -21,9 +21,10 @@ install()
   rm -rf $tmpd
   mkdir $tmpd
   cd $tmpd
-  cp $DOGEOSBIN/../share/fifo/chunter-latest.gz .
-  gunzip chunter-latest.gz
-  sh ./chunter-latest
+  local CHUNTERFILE=$(ls $DOGEOSBIN/../share/fifo/chunter-*.gz)
+  cp $DOGEOSBIN/../share/fifo/$CHUNTERFILE .
+  gunzip $CHUNTERFILE
+  sh ./${CHUNTERFILE%.*}
   echo2console "Done with code " $?
 }
 
