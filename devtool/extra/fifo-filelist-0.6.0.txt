@@ -3,3 +3,6 @@ http://release.project-fifo.net/pkg/rel/fifo-jingles-0.6.0p3.tgz
 http://release.project-fifo.net/pkg/rel/fifo-snarl-0.6.0p1.tgz
 http://release.project-fifo.net/pkg/rel/fifo-sniffle-0.6.0p1.tgz
 http://release.project-fifo.net/pkg/rel/fifo-wiggle-0.6.0p3.tgz
+http://release.project-fifo.net/pkg/rel/leo_gateway-1.1.2.tgz
+http://release.project-fifo.net/pkg/rel/leo_manager-1.1.2.tgz
+http://release.project-fifo.net/pkg/rel/leo_storage-1.1.2.tgz
