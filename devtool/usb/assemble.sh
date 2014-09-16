@@ -1,7 +1,7 @@
 # usage: assemble.sh <dogeos-ver> <dist-iso-dir> <smartos-usb-img-path>
 
 DOGEOS_VER=$1
-DOGEOS_ISO_PATH=$2
+DOGEOS_ISO_PATH=$2/${DOGEOS_VER}.iso
 SMARTOS_USB_PATH=$3
 
 USBIMG=${DOGEOS_VER}.img
@@ -13,8 +13,16 @@ mkfile -n $USBSIZE $USBIMG
 udev=$(lofiadm -a $USBIMG)
 
 # create partition
-echo "Will start fdisk, please cmds ('n', '1', 'C', '100', 'y', '6') in order: "
-fdisk ${udev/lofi/rlofi}
+# create partition
+#echo "Will start fdisk, please cmds ('n', '1', 'C', '100', 'y', '6') in order: "
+echo "Start fdisk new usb img"
+echo "n
+1
+C
+100
+y
+6
+" | fdisk ${udev/lofi/rlofi}
 
 # format the usb img
 echo "yes" | mkfs -F pcfs -o fat=32 ${udev/lofi/rlofi}:c

@@ -101,14 +101,14 @@ cd -
 rm -rf iso; mkdir iso
 cd iso
   cp -v $CWD/dogeos/devtool/iso/* .
-  ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/boot_archive $CWD/smartos/smartos-${SMARTOS_VER}.iso $CWD/extra
+  ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/dist/boot_archive $CWD/smartos/smartos-${SMARTOS_VER}.iso $CWD/extra
 cd -
 
 # Step 4: assemble USB
 rm -rf usb; mkdir usb
 cd usb
   cp -v $CWD/dogeos/devtool/usb/* .
-  ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/iso $CWD/smartos/smartos-${SMARTOS_VER}-USB.img
+  ./assemble.sh "dogeos-${SMARTOS_VER}-${FIFO_VER}" $CWD/dist/iso $CWD/smartos/smartos-${SMARTOS_VER}-USB.img
 cd -
 
 # Step 5: cleanup work
