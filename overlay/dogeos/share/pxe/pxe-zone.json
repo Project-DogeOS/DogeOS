@@ -5,7 +5,7 @@
   "brand": "joyent",
   "max_physical_memory": {{=it.max_physical_memory || 64}},
   "quota": "{{=it.quota || 2}}",
-  "image_uuid": "17c98640-1fdb-11e3-bf51-3708ce78e75a",
+  "image_uuid": "d34c301e-10c3-11e4-9b79-5f67ca448df0",
   "nics": [
     {
       "interface": "net0",

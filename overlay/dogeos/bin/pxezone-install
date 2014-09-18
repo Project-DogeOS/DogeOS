@@ -28,6 +28,8 @@ net0_gateway=
 vm_mem=
 vm_quota=
 root_shadow=
+dhcp_iprange_start=
+dhcp_iprange_end=
 
 dogeosPxeDetectDhcpServer()
 {
@@ -60,42 +62,76 @@ dogeosPxeCloseResources()
   umount $DOGEOS_EXTRA
 }
 
+dogeosPxeCreateVm()
+{
+  local vmconf=$1
+  echo "Create VM (This could take a while)..."
+  local result=`vmadm create -f $vmconf 2>&1`
+  if ! grep -q "Successfully" <<<$result; then
+    failAndExit "Oops, create fifo vm failed, that's something!"
+  fi
+  pxeZoneUUID=`echo $result | awk '{ print $NF; }'`
+  echo "Done"
+}
+
 dogeosPxeInstallPkg()
 {
-  zlogin $pxeZoneUUID "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
-  zlogin $pxeZoneUUID cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
-  zlogin $pxeZoneUUID "echo \"http://$gzNicAdminIp:8082\" >\"/opt/local/etc/pkgin/repositories.conf\""
-  pkgin -y install tftp-hpa dnsmasq
+  dogeosGetAdminNicIp
+  gzNicAdminIp="$val"
+
+  zexec "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
+  zexec cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zexec "echo \"http://$gzNicAdminIp:8082\" >\"/opt/local/etc/pkgin/repositories.conf\""
+  zexec pkgin -y in tftp-hpa dnsmasq
 }
 
 dogeosPxeTftpSetup()
 {
-  mkdir /tftpboot
-  echo "tftp dgram udp wait root /opt/local/sbin/in.tftpd in.tftpd -s /tftpboot" > /tmp/tftp.inetd
-  svcadm enable inetd
-  inetconv -i /tmp/tftp.inetd -o /tmp
-  svccfg import /tmp/tftp-udp.xml
-  svcadm restart tftp/udp
+  echo "Setup PXE zone tftp..."
+
+  zexec mkdir /tftpboot
+  zexec "echo \"tftp dgram udp wait root /opt/local/sbin/in.tftpd in.tftpd -s /tftpboot\" > /tmp/tftp.inetd"
+  zexec svcadm enable inetd
+  dogeosVerifySvc inetd
+
+  zexec "inetconv -i /tmp/tftp.inetd -o /tmp"
+  zexec svccfg import /tmp/tftp-udp.xml
+  zexec svcadm restart tftp/udp
+  dogeosVerifySvc tftp/udp
+
+  echo "All done."
 }
 
 dogeosPxeDnsmasqSetup()
 {
+  echo "Setup PXE zone dnsmasq..."
+
   local tmpjsondata=/tmp/dnsmasq-conf-`date +%s`.data
   rm -rf $tmpjsondata
-  touch $tmpfifodata
+
   # gendata
-  cp /opt/local/etc/dnsmasq.conf /opt/local/etc/dnsmasq.conf.old
-  cat $tmpjsondata | $NODE doTool.js ../share/pxe/dnsmasq.conf >/opt/local/etc/dnsmasq.conf
-  svcadm enable dnsmasq
+  echo "{" >>$tmpjsondata
+  echo "\"dhcpRange\": \"$dhcp_iprange_start,$dhcp_iprange_end,2h\"" >>$tmpjsondata
+  echo "}" >> $tmpjsondata
+
+  zexec cp /opt/local/etc/dnsmasq.conf /opt/local/etc/dnsmasq.conf.old
+  cat $tmpjsondata | $NODE doTool.js ../share/pxe/dnsmasq.conf >/zones/$pxeZoneUUID/root/opt/local/etc/dnsmasq.conf
+  zexec svcadm enable dnsmasq
+  dogeosVerifySvc dnsmasq
+
+  echo "All done."
 }
 
 dogeosPxeCopyFiles()
 {
+  echo "Copy files into PXE zone..."
   local extraPath=$1
   local uuid=$2
-  cp $extraPath/dogeos/pxe/pxegrub /zones/$uuid/root/tftpboot
+  cp /dogeos/share/pxe/pxegrub /zones/$uuid/root/tftpboot
   rsync -avz $extraPath/platform /zones/$uuid/root/tftpboot/
   rsync -avz $extraPath/boot /zones/$uuid/root/tftpboot/
+  zexec chown -R root:root /tftpboot/*
+  echo "All done."
 }
 
 dogeosPxeWelcome()
@@ -122,12 +158,17 @@ PXE Zone quota
   Memory (in MB): $vm_mem
   Disk (in GB): $vm_quota
 
-FIFO zone NIC configuration
+PXE Zone NIC configuration
 
   NIC tag: $net0_nic
   IP address: $net0_ip
   Netmask: $net0_netmask
   Gateway: $net0_gateway
+
+DHCP Service configuration
+
+  Start IP: $dhcp_iprange_start
+  End IP: $dhcp_iprange_end
 "
 
   dlg --yesno "$message" 30 60
@@ -150,11 +191,15 @@ dogeosPxeAskConfiguration()
     net0_netmask="$val"
     dogeosSetNetIP "Set Gateway for the default NIC of FIFO zone" "$net0_gateway"
     net0_gateway="$val"
+    dogeosSetNetIP "Set start Ip of your DHCP service" "$net0_gateway"
+    dhcp_iprange_start="$val"
+    dogeosSetNetIP "Set end IP of your DHCP service" "$net0_ip"
+    dhcp_iprange_end="$val"
     vm_mem="64" # fix to be 64MB
     vm_quota="2" # fix to be 2GB
     dogeosSetRootPasswd "PXE Zone"
     root_shadow="$val"
-    dogeosReview
+    dogeosPxeReview
     if [ -z "$val" ]; then
       break
     fi
@@ -163,16 +208,16 @@ dogeosPxeAskConfiguration()
 
 dogeosPxeGenData()
 {
-  datafile=$1
-  echo "{" >>$1
-  echo "\"max_physical_memory\":" $vm_mem >>$1
-  echo "," "\"quota\":" $vm_quota >>$1
-  echo "," "\"net0nictag\":" "\"$net0_nic\"" >>$1
-  echo "," "\"net0ip\":" "\"$net0_ip\"" >>$1
-  echo "," "\"resolvers\": [ \"8.8.8.8\", \"8.8.4.4\" ]" >>$1
-  echo "," "\"net0gateway\":" "\"$net0_gateway\"" >>$1
-  echo "," "\"net0netmask\":" "\"$net0_netmask\"" >>$1
-  echo "}" >>$1
+  local datafile=$1
+  echo "{" >>$datafile
+  echo "\"max_physical_memory\":" $vm_mem >>$datafile
+  echo "," "\"quota\":" $vm_quota >>$datafile
+  echo "," "\"net0nictag\":" "\"$net0_nic\"" >>$datafile
+  echo "," "\"net0ip\":" "\"$net0_ip\"" >>$datafile
+  echo "," "\"resolvers\": [ \"8.8.8.8\", \"8.8.4.4\" ]" >>$datafile
+  echo "," "\"net0gateway\":" "\"$net0_gateway\"" >>$datafile
+  echo "," "\"net0netmask\":" "\"$net0_netmask\"" >>$datafile
+  echo "}" >>$datafile
 }
 
 dogeosPxeGenZoneConf()
@@ -181,12 +226,11 @@ dogeosPxeGenZoneConf()
   local tmpdata=/tmp/pxejson-`date +%s`.data
   rm -rf $tmpdata
   touch $tmpdata
-  dogeosPxeGenData $tmpfifodata
+  dogeosPxeGenData $tmpdata
 
   # generate zone json
-  local tmpfifojson=/tmp/pxejson-`date +%s`.json
+  local tmpjson=/tmp/pxejson-`date +%s`.json
   rm -rf $tmpjson
-  touch $tmpjson
   cat $tmpdata | $NODE doTool.js ../share/pxe/pxe-zone.json | json >$tmpjson
 
   local message="Continue with following json configuration of PXE Zone ?
@@ -218,6 +262,12 @@ dlg_backtitle="DogeOS: Welcome!"
 
 dogeosPxeWelcome
 
+# decide the live media type
+dogeosFindLiveMediaType
+live_media=$val
+dogeosDecideMediaDev $live_media
+live_media_path="$val"
+
 dlg_backtitle="DogeOS > PXE Zone: Network Configuration"
 
 dogeosPxeAskConfiguration
@@ -228,14 +278,15 @@ dogeosPxeGenZoneConf
 pxe_zone_json="$val"
 
 dogeosPxePrepareResources
-dogeosImportImg "base64-13.2.1"
+dogeosImportImg "base64-14.2.0"
 dogeosFixJoyentManifest
-dogeosCreateVm $pxe_zone_json
+dogeosPxeCreateVm $pxe_zone_json
 
+setZexecUUID $pxeZoneUUID
 dogeosPxeInstallPkg
 dogeosPxeTftpSetup
 dogeosPxeDnsmasqSetup
-dogeosPxeCopyFiles
+dogeosPxeCopyFiles $DOGEOS_EXTRA $pxeZoneUUID
 
 dogeosPxeCloseResources
 
@@ -243,6 +294,6 @@ dlg_backtitle="DogeOS > PXE Zone: Congratulation!"
 
 dlg --msgbox "All done. PXE Zone is running alive now!
 
-You can turn on other servers in the same network to boot."
+You can turn on other servers in the same network to boot." 15 60
 
 cd $oldcwd
