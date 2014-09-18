@@ -426,3 +426,32 @@ dogeosFixJoyentManifest()
   done
   echo "All Done"
 }
+
+# check critical system services before go on
+#   param #1 retry time, if not given, will not wait
+dogeosCheckSysEnv()
+{
+  local ret=
+  local wait=$1
+
+  echo "Checking system env..."
+  if [[ -n "$wait" ]]; then
+    wait=0
+  fi
+  while : ; do
+    svcs smartdc/vmadmd | grep "online" 2>&1 1>/dev/null
+    ret=$?
+    if [ $ret -ne 0 ]; then
+      echo "Critical system services are still not online. Please wait/fix them before installing FiFo zone."
+      if [ $wait -gt 0 ]; then
+        echo "Sleep" $wait "seconds before retry (Ctrl-C to exit)..."
+        sleep $wait
+      else
+        exit $ret
+      fi
+    else
+      break
+    fi
+  done
+  echo "Passed."
+}

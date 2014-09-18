@@ -21,10 +21,11 @@ install()
   rm -rf $tmpd
   mkdir $tmpd
   cd $tmpd
-  local CHUNTERFILE=$(ls $DOGEOSBIN/../share/fifo/chunter-*.gz)
-  cp $DOGEOSBIN/../share/fifo/$CHUNTERFILE .
-  gunzip $CHUNTERFILE
-  sh ./${CHUNTERFILE%.*}
+  local CHUNTERFILE=$(ls ${DOGEOSBIN}/../share/fifo/chunter-*.gz)
+  local CHUNTERBASE=$(basename $CHUNTERFILE)
+  cp $CHUNTERFILE .
+  gunzip $CHUNTERBASE
+  sh ./${CHUNTERBASE%.*}
   echo2console "Done with code " $?
 }
 

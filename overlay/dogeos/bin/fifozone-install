@@ -25,11 +25,16 @@ dns_resolver1="8.8.8.8"
 dns_resolver2="8.8.4.4"
 fifo_vm_mem=3072
 fifo_vm_quota=40
-fifoZoneUUID=
 net0_nic=
 net0_ip=
 net0_gateway=
 net0_netmask=
+
+fifoZoneUUID=
+fifoLeoFSAccessKey=
+fifoLeoFSSecret=
+fifoLeoFSUserPasswd=`openssl rand -base64 32 | fold -w8 | head -n1`
+fifoLeoFSEndpoint="fifo-$(hostname)"
 
 # Functions
 
@@ -78,34 +83,148 @@ dogeosInstallComponents()
   local nicAdminIp="$val"
   echo "Start install components for zone:" $fifoZoneUUID "..."
   zexec "echo \"http://release.project-fifo.net/pkg/rel/\" >>\"/opt/local/etc/pkgin/repositories.conf\""
-  zexec cp /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
+  zexec cp -v /opt/local/etc/pkgin/repositories.conf /opt/local/etc/pkgin/repositories.conf.bak
   zexec "echo \"http://$nicAdminIp:8080\" >\"/opt/local/etc/pkgin/repositories.conf\""
   zexec "echo \"http://$nicAdminIp:8081\" >>\"/opt/local/etc/pkgin/repositories.conf\""
   zexec pkgin -fy up
-  zexec "pkgin -y in nginx fifo-snarl"
-  zexec "pkgin -y in fifo-sniffle"
-  zexec "pkgin -y in fifo-howl"
-  zexec "pkgin -y in fifo-wiggle"
-  zexec "pkgin -y in fifo-jingles"
-  zexec cp /opt/local/fifo-jingles/config/nginx.conf /opt/local/etc/nginx/nginx.conf
-  zexec cp /opt/local/etc/pkgin/repositories.conf.bak /opt/local/etc/pkgin/repositories.conf
+  zexec pkgin -y in nginx
+  zexec pkgin -y in leo_manager
+  zexec pkgin -y in leo_storage
+  zexec pkgin -y in leo_gateway
+  zexec pkgin -y in fifo-snarl
+  zexec pkgin -y in fifo-sniffle
+  zexec pkgin -y in fifo-howl
+  zexec pkgin -y in fifo-wiggle
+  zexec pkgin -y in fifo-jingles
+  zexec cp -v /opt/local/etc/pkgin/repositories.conf.bak /opt/local/etc/pkgin/repositories.conf
   echo "Done"
 }
 
 dogeosEnableLeoFS()
 {
+  local result=
+  local finish=
+  local ret=
+
+  # currently, we setup all leofs componenets in the fifo zone, which is 1/1/1 manager/gateway/storage
+  # in future, this part will be cleaned to support distributed leofs components
+
   echo "Enable leofs services of zone:" $fifoZoneUUID "..."
 
-  zexec "svcadm enable leofs/manager0"
-  zexec "svcadm enable leofs/manager1"
-  #zexec "leofs-adm status" # Repeate until a status screen is shown and Mnesia is started
+  #local mngr1=127.0.0.1
+  #local mngr2=127.0.0.1
+  #local cookie=$(openssl rand -base64 32 | fold -w16 | head -n1)
 
-  zexec "svcadm enable leofs/storage"
-  #zexec "leofs-adm status" #Repeate until the storage node is shown
-  zexec "leofs-adm start"
+  # setup & start lefs/manager leofs/storage leofs/gateway
+  zexec "sed -e \"/^[^;]*manager.partner/d\" -i.bak /opt/local/leo_manager/etc/leo_manager.conf"
+  zexec svcadm enable epmd
+  zexec svcadm enable "leofs/manager"
+  zexec svcadm enable "leofs/storage"
+  zexec svcadm enable "leofs/gateway"
+  # now verify
+  local svcs="epmd leofs/manager leofs/storage leofs/gateway"
+  for svc in $svcs
+  do
+    finish=0
+    echo "Now verifying svc $svc ..."
+    while : ; do # TOFIX: infinite loop
+      if [[ $finish -ne 0 ]]; then
+        break
+      fi
 
-  zexec "svcadm enable leofs/gateway"
-  #zexec "leofs-adm status" #Repeate until the gateway node is shown
+      finish=0
+      ret=$(zexec svcs $svc | grep "online" | grep $svc)
+      if [ -z "$ret" ]; then
+        echo "oops, will retry in 5 second..."
+      else
+        echo "Verified."
+        finish=1 # mark done and also sleep 1 second
+      fi
+
+      sleep 5
+    done
+  done
+
+  # copy leofs-adm to fifo zone & chmod +x
+  cp /dogeos/share/fifo/leofs-adm /zones/$fifoZoneUUID/root/root/
+  zexec chmod +x /root/leofs-adm
+
+  # start leofs & setup fifo stuff
+  echo "check leofs status"
+  while : ; do # TOFIX: infinite loop
+    result=$(zexec /root/leofs-adm status | grep "storage_0" | grep "attached") # should not show problems with mnesia
+    if [ -z "$result" ]; then
+      echo "oops, seems not ready, wait for 5 second..."
+    else
+      echo "storage_0 is attached."
+      break
+    fi
+    sleep 5
+  done
+
+  echo "now start leofs service"
+  zexec /root/leofs-adm start
+
+  echo "verify leofs status"
+  while : ; do # TOFIX: infinite loop
+    result=$(zexec /root/leofs-adm status | grep "storage_0" | grep "running") # should not show problems with mnesia
+    if [ -z "$result" ]; then
+      echo "oops, seems not ready, wait for 5 second..."
+    else
+      echo "storage_0 is running, leofs is alive."
+      break
+    fi
+    sleep 5
+  done
+
+  zexec /root/leofs-adm status # should show storage and gateway nodes
+
+  echo "leofs service should be OK, now register FiFo"
+  zexec /root/leofs-adm add-endpoint $fifoLeoFSEndpoint
+  zexec /root/leofs-adm get-endpoints
+
+  result=$(zexec /root/leofs-adm create-user fifo_s3 $fifoLeoFSUserPasswd)
+
+  # now parse the accessKey and secret
+  # exmample output:
+  #   [root@leofs-test ~]# ./leofs-adm create-user fifo_s3 123456
+  #     access-key-id: 99517962ea1952b010c2
+  #     secret-access-key: 84da153384481572a22f251618f25e73de9d4e51
+  # reuslt should be on line as: "access-key-id: 99517962ea1952b010c2 secret-access-key: 84da153384481572a22f251618f25e73de9d4e51"
+  fifoLeoFSAccessKey=$(echo $result | awk 'NR==1{ print $2 }')
+  fifoLeoFSSecret=$(echo $result | awk 'NR==1{ print $4}')
+
+  zexec /root/leofs-adm add-bucket fifo $fifoLeoFSAccessKey
+  zexec /root/leofs-adm add-bucket fifo-images $fifoLeoFSAccessKey
+  zexec /root/leofs-adm add-bucket fifo-snapshots $fifoLeoFSAccessKey
+
+  # backup the critical info in FiFo zone file
+  local fifoinfo="/root/dogeos.fifo.local"
+  zexec "echo \"fifo-leofs-user: fifo_s3\" >>${fifoinfo}"
+  zexec "echo \"fifo-leofs-passwd: ${fifoLeoFSUserPasswd}\" >>${fifoinfo}"
+  zexec "echo \"fifo-leofs-access-key: ${fifoLeoFSAccessKey}\" >>${fifoinfo}"
+  zexec "echo \"fifo-leofs-secret: ${fifoLeoFSSecret}\" >>${fifoinfo}"
+
+  # leofs related stuff
+  echo "sniffle-admin config set storage.s3.port 443"
+  zexec sniffle-admin config set storage.s3.port 443
+  echo "sniffle-admin config set storage.general.backend s3"
+  zexec sniffle-admin config set storage.general.backend s3
+  echo "sniffle-admin config set storage.s3.host 127.0.0.1"
+  zexec sniffle-admin config set storage.s3.host 127.0.0.1
+  echo "sniffle-admin config set storage.s3.access_key \"${fifoLeoFSAccessKey}\""
+  zexec "sniffle-admin config set storage.s3.access_key ${fifoLeoFSAccessKey}"
+  echo "sniffle-admin config set storage.s3.secret_key \"${fifoLeoFSSecret}\""
+  zexec "sniffle-admin config set storage.s3.secret_key ${fifoLeoFSSecret}"
+  echo "sniffle-admin config set storage.s3.image_bucket fifo-images"
+  zexec sniffle-admin config set storage.s3.image_bucket fifo-images
+  echo "sniffle-admin config set storage.s3.general_bucket fifo"
+  zexec sniffle-admin config set storage.s3.general_bucket fifo
+  echo "sniffle-admin config set storage.s3.snapshot_bucket fifo-snapshots"
+  zexec sniffle-admin config set storage.s3.snapshot_bucket fifo-snapshots
+
+  echo "all setting accepted, summary:"
+  zexec sniffle-admin config show
 
   echo "Done"
 }
@@ -118,10 +237,14 @@ dogeosEnableSvcs()
   local done=0
   local ret=
 
+  # setup conf files first
+  zexec cp /opt/local/fifo-jingles/config/nginx.conf /opt/local/etc/nginx/nginx.conf
+
+  # enable svcs one by one
   for svc in $svcs
   do
     done=0
-    while : ; do
+    while : ; do  # TOFIX: infinite loop
       if [ "$done" -ne 0 ]; then
         break
       fi
@@ -137,13 +260,13 @@ dogeosEnableSvcs()
       echo "Now verifying svc $svc ..."
       ret=$(zexec svcs $svc | grep "online" | grep $svc)
       if [ -z "$ret" ]; then
-        echo "oops, will retry in 1 second..."
+        echo "oops, will retry in 5 second..."
       else
         echo "Verified."
         done=1
       fi
 
-      sleep 1
+      sleep 5
     done
   done
 
@@ -152,15 +275,16 @@ dogeosEnableSvcs()
   for svc in $fifosvcs
   do
     done=0
-    while : ; do
+    while : ; do  # TOFIX: infinite loop
       if [ "$done" -ne 0 ]; then
         break
       fi
 
       echo "Validate fifo service $svc ..."
-      zexec /opt/local/fifo-$svc/bin/$svc ping
-      if [ $? -eq 0 ]; then
-        done=1
+      ret=$(zexec /opt/local/fifo-$svc/bin/$svc ping)
+      if [ $? -eq 0 ] && [[ $ret == *pong* ]]; then
+        echo "alive"
+        done=1 # mark done and also sleep 1 second
       else
         echo "oops, will retry in 1 second..."
       fi
@@ -263,14 +387,14 @@ dogeosSetMem()
   local ret=
   val=""
   while [ -z "$val" ]; do
-    val=$(dlg --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "1024")
+    val=$(dlg --stdout --no-cancel --inputbox "Memory for FIFO zone (in MB):" 10 60 "2048") # default 2GB mem
     ret=$?
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     if ! [[ "$val" =~ ^[0-9]+$ ]] ; then
       dlg --msgbox "A valid decimal number must be provided." 10 60
       continue
     else
-      if [ $val -lt 1023 ]; then
+      if [ $val -lt 2047 ]; then
         dlg --msgbox "Mem <2048MB will probably cause failures of some FiFo zone services. Please assign more." 10 60
         val=""
         continue
@@ -426,6 +550,8 @@ dogeosGenZoneConf()
 # preparation
 trap sigexit SIGINT
 
+dogeosCheckSysEnv 5
+
 dogeosGetGZNicInfo
 
 # now the guts
@@ -449,14 +575,14 @@ dogeosGenZoneConf
 fifo_zone_json="$val"
 
 dogeosPrepareResources
-dogeosImportImg "leofs-1.1.1"
+dogeosImportImg "base64-14.2.0"
 dogeosFixJoyentManifest
 dogeosCreateVm $fifo_zone_json
 
 setZexecUUID $fifoZoneUUID
 dogeosInstallComponents
-dogeosEnableLeoFS
 dogeosEnableSvcs
+dogeosEnableLeoFS
 dogeosPostConf $root_shadow
 dogeosCloseResources
 dogeosJoinCluster
