@@ -41,10 +41,23 @@ idev=$(lofiadm -a $DOGEOS_ISO_PATH)
 rm -rf isomnt; mkdir isomnt
 mount -o ro -F hsfs $idev isomnt
 
+# the boot_archive need to add usb media mark
+# so we copy boot_archive here and modify
+cp isomnt/platform/i86pc/amd64/boot_archive boot_archive
+badev=$(lofiadm -a boot_archive)
+rm -rf bamnt; mkdir bamnt
+mount $badev bamnt
+echo "" >bamnt/dogeos/liveusb
+umount bamnt
+lofiadm -d $badev
+digest -a sha1 boot_archive >boot_archive.hash
+
 # copy files
-rsync -avz isomnt/ u/
+rsync -avz --exclude="platform/i86pc/amd64/boot_archive" --exclude="platform/i86pc/amd64/boot_archive.hash" isomnt/ u/
 rm -rf u/boot
 rm -rf u/boot.catalog
+cp boot_archive u/platform/i86pc/amd64
+cp boot_archive.hash u/platform/i86pc/amd64
 cp -rv usbmnt/boot u/
 
 # enable boot

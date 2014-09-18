@@ -1,9 +1,5 @@
 # Auto build a DogeOS from scratch
 
-# Work Dir:
-#  /opt/dogeos-build/
-#  (make sure it is empty, and build.sh is in it)
-
 # debug switch
 #set -x trace
 
@@ -34,6 +30,10 @@ WGET="wget --no-check-certificate"
 CWD=`pwd`
 BTD=$(readlink -e $(dirname $0)) # build tool dir
 DOGED=$(readlink -e $BTD/../) # dogeos repo dir
+
+SKIP_DOWNLOAD=$1
+
+if [[ -z "$SKIP_DOWNLOAD" ]]; then
 
 # Step 1: download all required resources
 
@@ -85,6 +85,12 @@ cd pkgs/joyent-${JOYENT_VER}
   $WGET -i ../../dogeos/devtool/filelist/joyent-filelist-${JOYENT_VER}.txt
 cd -
 ln -s ../../pkgs/joyent-${JOYENT_VER} extra/dogeos/joyent
+
+# End of Step 1: download all required resources
+
+else
+  echo "as your wish, skipped downloading."
+fi
 
 # prepare the dist dir & change to it
 rm -rf dist; mkdir dist
