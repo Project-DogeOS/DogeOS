@@ -6,18 +6,18 @@
 # First please modify following conf vars
 
 # ver 0.6.0
-#SMARTOS_VER=20140501T225642Z
-#FIFO_VER=0.6.0
-#JOYENT_VER=2014Q2 # ref http://pkgsrc.joyent.com/packages/SmartOS/
-#DATASETS_NAME=base64-14.2.0
-#DATASETS_UUID=d34c301e-10c3-11e4-9b79-5f67ca448df0
+SMARTOS_VER=20140501T225642Z
+FIFO_VER=0.6.0
+JOYENT_VER=2014Q2 # ref http://pkgsrc.joyent.com/packages/SmartOS/
+DATASETS_NAME=base64-14.2.0
+DATASETS_UUID=d34c301e-10c3-11e4-9b79-5f67ca448df0
 
 # ver 0.4.5
-SMARTOS_VER=20140501T225642Z
-FIFO_VER=0.4.5
-JOYENT_VER=2014Q1 # ref http://pkgsrc.joyent.com/packages/SmartOS/
-DATASETS_NAME=base64-13.2.1
-DATASETS_UUID=17c98640-1fdb-11e3-bf51-3708ce78e75a
+#SMARTOS_VER=20140501T225642Z
+#FIFO_VER=0.4.5
+#JOYENT_VER=2014Q1 # ref http://pkgsrc.joyent.com/packages/SmartOS/
+#DATASETS_NAME=base64-13.2.1
+#DATASETS_UUID=17c98640-1fdb-11e3-bf51-3708ce78e75a
 
 DOGEOS_VER=DogeOS-${SMARTOS_VER}-${FIFO_VER}
 
