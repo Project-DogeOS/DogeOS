@@ -67,9 +67,9 @@ dogeosCloseResources()
 
 dogeosCreateVm()
 {
-  vmconf=$1
+  local vmconf=$1
   echo "Create VM (This could take a while)..."
-  result=`vmadm create -f $vmconf 2>&1`
+  local result=`vmadm create -f $vmconf 2>&1`
   if ! grep -q "Successfully" <<<$result; then
     failAndExit "Oops, create fifo vm failed, that's something!"
   fi
@@ -110,10 +110,6 @@ dogeosEnableLeoFS()
   # in future, this part will be cleaned to support distributed leofs components
 
   echo "Enable leofs services of zone:" $fifoZoneUUID "..."
-
-  #local mngr1=127.0.0.1
-  #local mngr2=127.0.0.1
-  #local cookie=$(openssl rand -base64 32 | fold -w16 | head -n1)
 
   # setup & start lefs/manager leofs/storage leofs/gateway
   zexec "sed -e \"/^[^;]*manager.partner/d\" -i.bak /opt/local/leo_manager/etc/leo_manager.conf"

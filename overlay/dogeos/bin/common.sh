@@ -455,3 +455,22 @@ dogeosCheckSysEnv()
   done
   echo "Passed."
 }
+
+# verify zone svc is up
+#   param #1 svc name
+dogeosVerifySvc()
+{
+  local svcname=$1
+  local result=
+  echo "Verify" $svcname "status"
+  while : ; do # TOFIX: infinite loop
+    result=$(zexec svcs $svcname | grep "online")
+    if [ -z "$result" ]; then
+      echo "oops, wait for 5 second to retry..."
+    else
+      echo "Verified."
+      break
+    fi
+    sleep 5
+  done
+}
