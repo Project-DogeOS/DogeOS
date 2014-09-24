@@ -53,7 +53,7 @@ rm -rf dogeos
 rm -rf chunter; mkdir chunter
 cd chunter
   $WGET -i ${DOGED}/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt
-  chunterver=$(basename $(cat ../../dogeos/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt)); chunterver=${chunterver/#chunter-/}; chunterver=${chunterver%.*}
+  chunterver=$(basename $(cat ${DOGED}/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt)); chunterver=${chunterver/#chunter-/}; chunterver=${chunterver%.*}
   echo $chunterver >chunter.version
 cd -
 
