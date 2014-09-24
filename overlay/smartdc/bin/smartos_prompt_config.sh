@@ -653,6 +653,11 @@ echo >>$tmp_config
 echo "etherstub=natsw0" >>$tmp_config
 # dogeos:
 
+# dogeos: output TZ option
+echo "# change TZ to your timezone if UTC is not yours" >>$tmp_config
+echo "TZ=UTC" >>$tmp_config
+# dogeos:
+
 echo
 echo "Your configuration is about to be applied."
 promptval "Would you like to edit the final configuration file?" "n"
@@ -678,6 +683,12 @@ sed -e "s|^root:[^\:]*:|root:${root_shadow}:|" /etc/shadow > /usbkey/shadow \
       && chmod 400 /usbkey/shadow
 
 cp -rp /etc/ssh /usbkey/ssh
+
+# dogeos: now create /opt/custom/smf and place ours
+mkdir -p ${OPTDS}/custom/smf
+cp -p /dogeos/share/smartos/root_bashrc.xml ${OPTDS}/custom/smf/
+cp -p /dogeos/share/smartos/bashrc ${OPTDS}/custom/.bashrc
+# dogeos:
 
 reboot
 
