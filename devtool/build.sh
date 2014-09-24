@@ -52,7 +52,7 @@ rm -rf dogeos
 # chunter, in chunter dir
 rm -rf chunter; mkdir chunter
 cd chunter
-  $WGET -i ../../dogeos/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt
+  $WGET -i ${DOGED}/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt
   chunterver=$(basename $(cat ../../dogeos/devtool/filelist/fifo-chunter-filelist-${FIFO_VER}.txt)); chunterver=${chunterver/#chunter-/}; chunterver=${chunterver%.*}
   echo $chunterver >chunter.version
 cd -
@@ -67,7 +67,7 @@ cd pkgs/fifo-${FIFO_VER}
   bunzip2 pkg_summary.bz2
   gzip -c pkg_summary >pkg_summary.gz
   bzip2 pkg_summary
-  $WGET -i ../../dogeos/devtool/filelist/fifo-filelist-${FIFO_VER}.txt
+  $WGET -i ${DOGED}/devtool/filelist/fifo-filelist-${FIFO_VER}.txt
 cd -
 ln -s ../../pkgs/fifo-${FIFO_VER} extra/dogeos/fifo
 
@@ -82,7 +82,7 @@ ln -s ../../datasets/${DATASETS_NAME} extra/dogeos/datasets
 # joyent pkgs, in joyent dir
 rm -rf pkgs/joyent-{JOYENT_VER}; mkdir -p pkgs/joyent-${JOYENT_VER}
 cd pkgs/joyent-${JOYENT_VER}
-  $WGET -i ../../dogeos/devtool/filelist/joyent-filelist-${JOYENT_VER}.txt
+  $WGET -i ${DOGED}/devtool/filelist/joyent-filelist-${JOYENT_VER}.txt
 cd -
 ln -s ../../pkgs/joyent-${JOYENT_VER} extra/dogeos/joyent
 
