@@ -44,7 +44,8 @@ versionUpdated()
   # $2 is local path of chunter.version
   local v1="$(awk 'BEGIN { FS="," } { print $1 }' "$1")"
   local v2="$(awk 'BEGIN { FS="," } { print $1 }' "$2")"
-  local vercomp=$($NODE vercomp.js ${v1} ${v2})
+  $NODE vercomp.js ${v1} ${v2}
+  local vercomp=$?
   if [ $vercomp -eq 1 ]; then
     val=""
   else
@@ -72,6 +73,8 @@ if [ -f /opt/chunter/bin/chunter ]; then
   echo2console "Compare local chunter version with live media."
   versionUpdated "/dogeos/share/fifo/chunter.version" "/opt/chunter/etc/chunter.version"
   if [ -z $val ]; then
+    echo2console "Already newest, nothing to be updated."
+  else
     # outdated, so move & install again
     echo2console "Local is outdated, will update to live media version..."
     mv /opt/chunter /opt/chunter-old-`date +%s`
