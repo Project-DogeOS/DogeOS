@@ -112,7 +112,13 @@ dogeosEnableLeoFS()
   echo "Enable leofs services of zone:" $fifoZoneUUID "..."
 
   # setup & start lefs/manager leofs/storage leofs/gateway
+
+  # yes, in this version just disable this backup manager feature
   zexec "sed -e \"/^[^;]*manager.partner/d\" -i.bak /opt/local/leo_manager/etc/leo_manager.conf"
+
+  # 8080 is defaultly used by wiggle, so just change to other port
+  zexec "sed -e \"/^[^;]*http.port/s/=.*$/= 18080/\" -i.bak /opt/local/leo_gateway/etc/leo_gateway.conf"
+
   zexec svcadm enable epmd
   zexec svcadm enable "leofs/manager"
   zexec svcadm enable "leofs/storage"
