@@ -1,0 +1,118 @@
+PKGNAME=fifo-howl-0.6.0p2
+DEPENDS=erlang>=15.1.1
+COMMENT=Project FiFo messaging Server.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=fifo
+HOMEPAGE=http://project-fifo.net/
+FILE_NAME=fifo-howl-0.6.0p2.tgz
+FILE_SIZE=23940696
+DESCRIPTION=Project FiFo's Howl is an asyncronouse channel based messaging server. TCP
+DESCRIPTION=Sockets build the one endpoint and a websocket server the other.
+DESCRIPTION=
+DESCRIPTION=http://project-fifo.net/display/PF/Howl
+
+PKGNAME=fifo-jingles-0.6.0p3
+DEPENDS=nginx>=1.3.13
+COMMENT=Project FiFo's UI.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=fifo
+HOMEPAGE=http://project-fifo.net/
+FILE_NAME=fifo-jingles-0.6.0p3.tgz
+FILE_SIZE=1183611
+DESCRIPTION=Project FiFo's HTTP UI, implemneting the Wiggle and Howl API.
+DESCRIPTION=
+DESCRIPTION=http://project-fifo.net/display/PF/Wiggle
+DESCRIPTION=http://project-fifo.net/display/PF/Howl
+
+PKGNAME=fifo-snarl-0.6.0p5
+DEPENDS=erlang>=15.1.1
+COMMENT=Project FiFo AAA Server.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=fifo
+HOMEPAGE=http://project-fifo.net/
+FILE_NAME=fifo-snarl-0.6.0p5.tgz
+FILE_SIZE=25891985
+DESCRIPTION=Project FiFo's Snarl is a Authentication Authorisation and accounting server.
+DESCRIPTION=It provides RBAC like fine grained access controll over a TCP based itnerface.
+DESCRIPTION=
+DESCRIPTION=http://project-fifo.net/display/PF/Snarl
+
+PKGNAME=fifo-sniffle-0.6.0p4
+DEPENDS=erlang>=15.1.1
+COMMENT=Project FiFo central management server.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=fifo
+HOMEPAGE=http://project-fifo.net/
+FILE_NAME=fifo-sniffle-0.6.0p4.tgz
+FILE_SIZE=26563213
+DESCRIPTION=Project FiFo's Sniffle is the central management instance. It's the one point where all the
+DESCRIPTION=componets connect together, storing VM, Hypervisor, package and dataset data.
+DESCRIPTION=
+DESCRIPTION=http://project-fifo.net/display/PF/Sniffle
+
+PKGNAME=fifo-wiggle-0.6.0p5
+DEPENDS=erlang>=15.1.1
+COMMENT=Project FiFo's HTTP API Server.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=fifo
+HOMEPAGE=http://project-fifo.net/
+FILE_NAME=fifo-wiggle-0.6.0p5.tgz
+FILE_SIZE=23105895
+DESCRIPTION=Project FiFo's Wiggle is the HTTP API frontend of Project FiFo.
+DESCRIPTION=
+DESCRIPTION=http://project-fifo.net/display/PF/Wiggle
+
+PKGNAME=leo_gateway-1.1.3
+DEPENDS=erlang>=15.1.1
+COMMENT=LeoFS gateway.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=leofs
+HOMEPAGE=http://www.leofs.org/
+FILE_NAME=leo_gateway-1.1.3.tgz
+FILE_SIZE=19474624
+DESCRIPTION=leo_gateway is handling http request and response and acceptable S3-API.
+
+PKGNAME=leo_manager-1.1.3
+DEPENDS=erlang>=15.1.1
+COMMENT=LeoFS manager.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=leofs
+HOMEPAGE=http://www.leofs.org/
+FILE_NAME=leo_manager-1.1.3.tgz
+FILE_SIZE=13944694
+DESCRIPTION=leo_maager is the coordinating component of LeoFS.
+
+PKGNAME=leo_storage-1.1.3
+DEPENDS=erlang>=15.1.1
+COMMENT=LeoFS storage server.
+MACHINE_ARCH=x86_64
+OPSYS=SunOS
+OS_VERSION=5.11
+PKGTOOLS_VERSION=20091115
+CATEGORIES=leofs
+HOMEPAGE=http://www.leofs.org/
+FILE_NAME=leo_storage-1.1.3.tgz
+FILE_SIZE=13865944
+DESCRIPTION=leo_storage handles the data storage for LeoFS.
+

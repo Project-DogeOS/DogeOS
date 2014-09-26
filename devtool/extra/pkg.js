@@ -26,11 +26,15 @@ var devMode = false;
 
 function loadPkgs(filename, callback) {
   var pkgconf = {};
+  var rawconf = [];
   readFileByLine(filename, function(line) {
     var l = line.trim();
+    rawconf.push(l);
     if (l.length <= 0) {
+      pkgconf.raw = rawconf;
       allPkgs.push(pkgconf);
       pkgconf = {};
+      rawconf = [];
     } else {
       var p = l.indexOf('=');
       var k = l.slice(0, p).trim();
@@ -162,6 +166,12 @@ function latest(printPrefix) {
   });
 }
 
+function printPkgSummary(pkgName) {
+  if (pkgName in pkgIndex) {
+    console.log(pkgIndex[pkgName].raw.join('\n'));
+  }
+}
+
 loadPkgs(process.argv[2], function() {
   if (process.argv[3]) {
     switch(process.argv[3]) {
@@ -177,6 +187,9 @@ loadPkgs(process.argv[2], function() {
         break;
       case 'print':
         print(process.argv[4]);
+        break;
+      case 'pkg_summary':
+        printPkgSummary(process.argv[4]);
         break;
       case 'latest':
         latest(process.argv[4]);
