@@ -137,6 +137,8 @@ dogeosEnableLeoFS()
       finish=0
       ret=$(zexec svcs $svc | grep "online" | grep $svc)
       if [ -z "$ret" ]; then
+        zexec svcadm disable $svc # disable first
+        zexec svcadm enable $svc # then restart
         echo "oops, will retry in 5 second..."
       else
         echo "Verified."
