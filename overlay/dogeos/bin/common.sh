@@ -262,6 +262,7 @@ dogeosFindZoneIp()
   cp findnicip.js /zones/$UUID/root/tmp/
   setZexecUUID $UUID
   ret=$(zexec "/opt/local/bin/node /tmp/findnicip.js")
+  val=$(echo "$ret" | awk '{ print $2 }')
   rm /zones/$UUID/root/tmp/findnicip.js
 }
 
