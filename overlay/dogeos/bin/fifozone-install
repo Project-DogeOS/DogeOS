@@ -194,10 +194,12 @@ dogeosEnableLeoFS()
   #   [root@leofs-test ~]# ./leofs-adm create-user fifo_s3 123456
   #     access-key-id: 99517962ea1952b010c2
   #     secret-access-key: 84da153384481572a22f251618f25e73de9d4e51
-  # reuslt should be on line as: "access-key-id: 99517962ea1952b010c2 secret-access-key: 84da153384481572a22f251618f25e73de9d4e51"
+  # reuslt should be one line as: "access-key-id: 99517962ea1952b010c2 secret-access-key: 84da153384481572a22f251618f25e73de9d4e51"
   fifoLeoFSAccessKey=$(echo $result | awk 'NR==1{ print $2 }')
   fifoLeoFSSecret=$(echo $result | awk 'NR==1{ print $4}')
+  echo "fifo keys generated:" $fifoLeoFSAccessKey $fifoLeoFSSecret
 
+  echo "add fifo buckets to leofs..."
   zexec /root/leofs-adm add-bucket fifo $fifoLeoFSAccessKey
   zexec /root/leofs-adm add-bucket fifo-images $fifoLeoFSAccessKey
   zexec /root/leofs-adm add-bucket fifo-snapshots $fifoLeoFSAccessKey
