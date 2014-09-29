@@ -156,10 +156,37 @@ function printAll() {
 }
 
 function latest(printPrefix) {
+  function _vercomp(pkgname1, pkgname2) {
+    // very naive algorithm
+    if (pkgname1.length < pkgname2.length) {
+      // e.g. xxx-0.1.0 < xxx-0.1.10
+      //      xxx-0.1.0 < xxx-0.1.1p1
+      return -1;
+    } else if (pkgname1.length > pkgname2.length) {
+      return 1;
+    } else {
+      // now use the asc order
+      if (pkgname1 < pkgname2) {
+        return -1;
+      } else if (pkgname1 === pkgname2) {
+        return 0;
+      } else {
+        return 1;
+      }
+    }
+  }
+
   var l = {};
   // use comment to differ the pkgs, and assume that pkgs input is in asc order
   allPkgs.forEach(function(pkg) {
-    l[pkg['COMMENT']] = pkg['FILE_NAME'];
+    if (pkg['COMMENT']) {
+      var r = _vercomp(l[pkg['COMMENT']], pkg['FILE_NAME']);
+      if (r < 0) {
+        l[pkg['COMMENT']] = pkg['FILE_NAME'];
+      }
+    } else {
+      l[pkg['COMMENT']] = pkg['FILE_NAME'];
+    }
   });
   Object.keys(l).forEach(function(key) {
     console.log((printPrefix || '') + l[key]);

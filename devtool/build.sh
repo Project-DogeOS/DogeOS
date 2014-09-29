@@ -63,8 +63,9 @@ mkdir -p extra/dogeos
 # Fifo distro, in fifo dir
 rm -rf pkgs/fifo-${FIFO_VER}; mkdir -p pkgs/fifo-${FIFO_VER}
 cd pkgs/fifo-${FIFO_VER}
-  $WGET http://release.project-fifo.net/pkg/rel/pkg_summary.bz2
-  bunzip2 pkg_summary.bz2
+  #$WGET http://release.project-fifo.net/pkg/rel/pkg_summary.bz2
+  #bunzip2 pkg_summary.bz2
+  cp ${DOGED}/devtool/pkg_summary/fifo_pkg_summary-${FIFO_VER} pkg_summary
   gzip -c pkg_summary >pkg_summary.gz
   bzip2 pkg_summary
   $WGET -i ${DOGED}/devtool/filelist/fifo-filelist-${FIFO_VER}.txt
@@ -82,6 +83,9 @@ ln -s ../../datasets/${DATASETS_NAME} extra/dogeos/datasets
 # joyent pkgs, in joyent dir
 rm -rf pkgs/joyent-{JOYENT_VER}; mkdir -p pkgs/joyent-${JOYENT_VER}
 cd pkgs/joyent-${JOYENT_VER}
+  cp ${DOGED}/devtool/pkg_summary/joyent_pkg_summary-${JOYENT_VER} pkg_summary
+  gzip -c pkg_summary >pkg_summary.gz
+  bzip2 pkg_summary
   $WGET -i ${DOGED}/devtool/filelist/joyent-filelist-${JOYENT_VER}.txt
 cd -
 ln -s ../../pkgs/joyent-${JOYENT_VER} extra/dogeos/joyent

@@ -30,7 +30,7 @@ DESCRIPTION=
 DESCRIPTION=http://project-fifo.net/display/PF/Wiggle
 DESCRIPTION=http://project-fifo.net/display/PF/Howl
 
-PKGNAME=fifo-snarl-0.6.0p5
+PKGNAME=fifo-snarl-0.6.0p11
 DEPENDS=erlang>=15.1.1
 COMMENT=Project FiFo AAA Server.
 MACHINE_ARCH=x86_64
@@ -39,14 +39,14 @@ OS_VERSION=5.11
 PKGTOOLS_VERSION=20091115
 CATEGORIES=fifo
 HOMEPAGE=http://project-fifo.net/
-FILE_NAME=fifo-snarl-0.6.0p5.tgz
-FILE_SIZE=25891985
+FILE_NAME=fifo-snarl-0.6.0p11.tgz
+FILE_SIZE=25893308
 DESCRIPTION=Project FiFo's Snarl is a Authentication Authorisation and accounting server.
 DESCRIPTION=It provides RBAC like fine grained access controll over a TCP based itnerface.
 DESCRIPTION=
 DESCRIPTION=http://project-fifo.net/display/PF/Snarl
 
-PKGNAME=fifo-sniffle-0.6.0p4
+PKGNAME=fifo-sniffle-0.6.0p6
 DEPENDS=erlang>=15.1.1
 COMMENT=Project FiFo central management server.
 MACHINE_ARCH=x86_64
@@ -55,8 +55,8 @@ OS_VERSION=5.11
 PKGTOOLS_VERSION=20091115
 CATEGORIES=fifo
 HOMEPAGE=http://project-fifo.net/
-FILE_NAME=fifo-sniffle-0.6.0p4.tgz
-FILE_SIZE=26563213
+FILE_NAME=fifo-sniffle-0.6.0p6.tgz
+FILE_SIZE=26562928
 DESCRIPTION=Project FiFo's Sniffle is the central management instance. It's the one point where all the
 DESCRIPTION=componets connect together, storing VM, Hypervisor, package and dataset data.
 DESCRIPTION=
