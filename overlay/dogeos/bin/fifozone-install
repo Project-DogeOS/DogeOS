@@ -218,9 +218,9 @@ dogeosEnableLeoFS()
   zexec sniffle-admin config set storage.general.backend s3
   echo "sniffle-admin config set storage.s3.host 127.0.0.1"
   zexec sniffle-admin config set storage.s3.host 127.0.0.1
-  echo "sniffle-admin config set storage.s3.access_key \"${fifoLeoFSAccessKey}\""
+  echo "sniffle-admin config set storage.s3.access_key" ${fifoLeoFSAccessKey}
   zexec "sniffle-admin config set storage.s3.access_key ${fifoLeoFSAccessKey}"
-  echo "sniffle-admin config set storage.s3.secret_key \"${fifoLeoFSSecret}\""
+  echo "sniffle-admin config set storage.s3.secret_key" ${fifoLeoFSSecret}
   zexec "sniffle-admin config set storage.s3.secret_key ${fifoLeoFSSecret}"
   echo "sniffle-admin config set storage.s3.image_bucket fifo-images"
   zexec sniffle-admin config set storage.s3.image_bucket fifo-images
