@@ -265,6 +265,10 @@ dogeosPxeWelcome
 # decide the live media type
 dogeosFindLiveMediaType
 live_media=$val
+if [ $live_media == "smartdoge" ]; then
+  echo "PXE installer could only be used in DogeOS. Exiting."
+  exit 1
+fi
 dogeosDecideMediaDev $live_media
 live_media_path="$val"
 
