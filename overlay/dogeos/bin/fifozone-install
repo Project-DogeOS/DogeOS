@@ -42,10 +42,14 @@ dogeosPrepareResources()
 {
   echo "Start preparing resources in $DOGEOS_EXTRA ... "
   mkdir -p $DOGEOS_EXTRA
-  if [ "$live_media" == "usb" ]; then
-    mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
-  else # dvd
-    mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
+  if [ "$live_media" == "smartdoge" ]; then
+    echo "Smartdoge detected."
+  else
+    if [ "$live_media" == "usb" ]; then
+      mount -F pcfs ${live_media_path/rdsk/dsk}:c $DOGEOS_EXTRA
+    else # dvd
+      mount -F hsfs ${live_media_path/rdsk/dsk} $DOGEOS_EXTRA
+    fi
   fi
   $NODE $DOGEOS_HOME/bin/simple-pkgsrc-repo.js $DOGEOS_EXTRA/dogeos/fifo 8080 &
   echo $! >$DOGEOS_HOME/var/repo-fifo.pid
@@ -62,7 +66,9 @@ dogeosCloseResources()
   if [ -f $DOGEOS_HOME/var/repo-joyent.pid ]; then
     kill `cat $DOGEOS_HOME/var/repo-joyent.pid`
   fi
-  umount $DOGEOS_EXTRA
+  if ![ "live_media" == "smartdoge" ]; then
+    umount $DOGEOS_EXTRA
+  fi
 }
 
 dogeosCreateVm()

@@ -21,6 +21,9 @@ cp -rvL isomnt/* cdrom/
 # copy dogeos boot_archive
 cp -rvL $BOOT_ARCHIVE_DIR/boot_archive* ./amd64/
 
+# copy extra files
+cp -rvL ../../../extra/* ./cdrom/ # we are in build/dist/iso/
+
 # gen iso
 LC_ALL=C mkisofs -R -b boot/grub/stage2_eltorito --follow-links -no-emul-boot -boot-load-size 4 -boot-info-table -quiet -o ${DOGEOS_VER}.iso cdrom/
 
