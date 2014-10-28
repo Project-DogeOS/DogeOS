@@ -156,7 +156,32 @@ function printAll() {
 }
 
 function latest(printPrefix) {
+  var re1 = /(^.*)(p|pre)(\d+)\.(.*$)/; // test pre/p release
+  var re2 = /(^.*)\.(.*$)/; // test non pre/p release
+  var typeMap = { 'p': 2, '': 1, 'pre': 0 };
+  function _parseType(pkgname) {
+    var r = re1.exec(pkgname);
+    if (r) {
+      return typeMap[r[2]];
+    } else {
+      r = re2.exec(pkgname);
+      if (r) {
+        return typeMap[''];
+      } else {
+        console.log('oops:', pkgname);
+        process.exit(1);
+      }
+    }
+  }
   function _vercomp(pkgname1, pkgname2) {
+    if (pkgname1 === undefined) { return -1; }
+    var t1 = _parseType(pkgname1);
+    var t2 = _parseType(pkgname2);
+    if (t1 < t2) {
+      return -1;
+    } else if (t1 > t2) {
+      return 1;
+    }
     // very naive algorithm
     if (pkgname1.length < pkgname2.length) {
       // e.g. xxx-0.1.0 < xxx-0.1.10
