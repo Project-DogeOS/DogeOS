@@ -197,10 +197,14 @@ dogeosGetAdminNicMac()
 # decide live media type, return in $val
 dogeosFindLiveMediaType()
 {
+  val="dvd"
   if [ -f /dogeos/liveusb ]; then
     val="usb"
-  else
-    val="dvd"
+    return
+  fi
+  if [ -f /dogeos/smartdoge ]; then
+    val="smartdoge"
+    return
   fi
 }
 

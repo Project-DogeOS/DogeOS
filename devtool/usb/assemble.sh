@@ -60,6 +60,9 @@ cp boot_archive u/platform/i86pc/amd64
 cp boot_archive.hash u/platform/i86pc/amd64
 cp -rv usbmnt/boot u/
 
+# copy extra files
+cp -rvL ../../../extra/* ./cdrom/ # we are in build/dist/usb/
+
 # enable boot
 umount u
 lofiadm -d $udev
