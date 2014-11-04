@@ -335,7 +335,7 @@ dogeosSetNetIP()
     dogeosTestCancelled $ret; [ -n "$tocont" ] && continue
     is_net "$val" || val=""
     [ -n "$val" ] && break
-    dlg --msgbox "A valid network mask (n.n.n.n) must be provided." 10 60
+    dlg --msgbox "A valid network address (n.n.n.n) must be provided." 10 60
   done
 }
 
