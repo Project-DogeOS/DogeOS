@@ -126,9 +126,9 @@ dogeosEnableLeoFS()
   # 431 is defaultly used by wiggle, so just change to other port
   zexec "sed -e \"/^[^;]*http.ssl_port/s/=.*$/= 18443/\" -i.bak /opt/local/leo_gateway/etc/leo_gateway.conf"
   # and setup default ssl options
-  zexec "sed -e \"/^[^;]*http.ssl_port/s/#//\" -i.bak /opt/local/leo_gateway/etc/leo_gateway.conf"
-  zexec "sed -e \"/^[^;]*http.ssl_certfile/s/#//\" -i.bak /opt/local/leo_gateway/etc/leo_gateway.conf"
-  zexec "sed -e \"/^[^;]*http.ssl_keyfile/s/#//\" -i.bak /opt/local/leo_gateway/etc/leo_gateway.conf"
+  zexec "sed -e \"/^[^;]*http.ssl_port/s/#//g\" -i /opt/local/leo_gateway/etc/leo_gateway.conf"
+  zexec "sed -e \"/^[^;]*http.ssl_certfile/s/#//g\" -i /opt/local/leo_gateway/etc/leo_gateway.conf"
+  zexec "sed -e \"/^[^;]*http.ssl_keyfile/s/#//g\" -i /opt/local/leo_gateway/etc/leo_gateway.conf"
 
   zexec svcadm enable epmd
   zexec svcadm enable "leofs/manager"
@@ -181,6 +181,7 @@ dogeosEnableLeoFS()
   zexec /root/leofs-adm start
 
   echo "verify leofs status"
+  # check storage_0
   while : ; do # TOFIX: infinite loop
     result=$(zexec /root/leofs-adm status | grep "storage_0" | grep "running") # should not show problems with mnesia
     if [ -z "$result" ]; then
@@ -191,6 +192,18 @@ dogeosEnableLeoFS()
     fi
     sleep 5
   done
+  # check gateway_0
+  while : ; do # TOFIX: infinite loop
+    result=$(zexec /root/leofs-adm status | grep "gateway_0" | grep "running") # should not show problems with mnesia
+    if [ -z "$result" ]; then
+      echo "oops, seems not ready, wait for 5 second..."
+    else
+      echo "gateway_0 is attached."
+      break
+    fi
+    sleep 5
+  done
+
 
   zexec /root/leofs-adm status # should show storage and gateway nodes
 
@@ -227,8 +240,8 @@ dogeosEnableLeoFS()
   zexec "echo \"127.0.0.1 fifo-images.${hostname}.localhost\" >>/etc/hosts"
 
   # leofs related stuff
-  echo "sniffle-admin config set storage.s3.port 18431"
-  zexec sniffle-admin config set storage.s3.port 18431
+  echo "sniffle-admin config set storage.s3.port 18443"
+  zexec sniffle-admin config set storage.s3.port 18443
   echo "sniffle-admin config set storage.general.backend s3"
   zexec sniffle-admin config set storage.general.backend s3
   echo "sniffle-admin config set storage.s3.host ${hostname}.localhost"
